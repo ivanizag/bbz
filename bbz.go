@@ -123,21 +123,46 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 				address := peekWord(memory, 0x100+uint16(sp+2)) - 2 // BRK pushes the address then P
 				faultNumber := memory.Peek(address + 1)
 				faultMessage := address + 2
-
-				faultString := ""
-				for {
-					ch := memory.Peek(faultMessage)
-					if ch == 0 {
-						break
-					}
-					faultString += string(ch)
-					faultMessage++
-				}
+				faultString := getStringFromMem(memory, faultMessage, 0)
 
 				pokeWord(memory, zpErrorPointer, address)
 				brkv := peekWord(memory, mosVectorBrk)
 				cpu.SetPC(brkv)
 				log = fmt.Sprintf("BREAK(ERR=%02x, '%s'", faultNumber, faultString)
+
+			case 0xffdd: // OSFILE: Load or save a complete file. BPUG page 446
+				/*
+					http://beebwiki.mdfs.net/OSFILE
+				*/
+				controlBlock := uint16(x) + uint16(y)<<8
+				filenameAddress := peekWord(memory, controlBlock)
+				startAddress := peekWord(memory, controlBlock+0xa)
+				endAddress := peekWord(memory, controlBlock+0xe)
+
+				filename := getStringFromMem(memory, filenameAddress, 0x0d)
+				filesize := endAddress - startAddress
+
+				fmt.Printf("{{%04x-%04x}}", startAddress, endAddress)
+				switch a {
+				case 0: // Save a section of memory as a named file
+					data := getMemSlice(memory, startAddress, filesize)
+					err := ioutil.WriteFile(filename, data, 0644)
+					if err != nil {
+						panic(err)
+					}
+				case 0xff: // Load file into memory
+					data, err := ioutil.ReadFile(filename)
+					if err != nil {
+						panic(err)
+					}
+					filesize = storeSliceinMem(memory, startAddress, endAddress-startAddress, data)
+					filesize = uint16(len(data))
+				}
+
+				pokeWord(memory, controlBlock+0xa, filesize)
+				pokeWord(memory, controlBlock+0x3, 0x33 /*attributes*/)
+
+				log = fmt.Sprintf("OSFILE(A=%02x,FCB=%04x,FILE=%s,SIZE=%v", a, controlBlock, filename, filesize)
 
 			case 0xffe7: // OSNEWL
 				/*
@@ -192,9 +217,12 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 				default:
 					panic(fmt.Sprintf("OSWORD%02x call not supported", a))
 				}
-			case 0xfff4: // OSBYTE
+			case 0xfff4: // OSBYTE, page 408 BPUG
 				option := "unknonw"
 				switch a {
+				case 0x82:
+					option = "Read machine high order address"
+					cpu.SetAXYP(a, 0xff, 0xff, p)
 				case 0x83:
 					option = "Read bottom of user mem"
 					cpu.SetAXYP(a,
@@ -241,6 +269,36 @@ func putStringInMem(mem core6502.Memory, address uint16, s string) {
 	for i := 0; i < len(s); i++ {
 		mem.Poke(address+uint16(i), s[i])
 	}
+}
+
+func getStringFromMem(mem core6502.Memory, address uint16, terminator uint8) string {
+	str := ""
+	for {
+		ch := mem.Peek(address)
+		//fmt.Printf("{%04x: %02x\n", address, ch)
+		if ch == terminator {
+			break
+		}
+		str += string(ch)
+		address++
+	}
+	return str
+}
+
+func getMemSlice(mem core6502.Memory, address uint16, length uint16) []uint8 {
+	slice := make([]uint8, 0, length)
+	for i := uint16(0); i < length; i++ {
+		slice = append(slice, mem.Peek(address+i))
+	}
+	return slice
+}
+
+func storeSliceinMem(mem core6502.Memory, address uint16, maxLength uint16, data []uint8) uint16 {
+	var i uint16
+	for i = 0; i < maxLength && i < uint16(len(data)); i++ {
+		mem.Poke(address+i, data[i])
+	}
+	return i
 }
 
 func peekWord(mem core6502.Memory, address uint16) uint16 {
