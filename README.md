@@ -18,6 +18,7 @@ language ROMs to run."
 
 References:
 - BBC Microcomputer System User Guide: https://archive.org/details/BBCUG
+- The Advanced User Guide for the BBC Microcomputer
 - Applecorn source code: https://github.com/bobbimanners/Applecorn
 
 ## Features

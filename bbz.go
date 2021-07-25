@@ -136,6 +136,8 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 				*/
 				controlBlock := uint16(x) + uint16(y)<<8
 				filenameAddress := peekWord(memory, controlBlock)
+				loadAddress := peekWord(memory, controlBlock+0x3)
+				executionAddress := peekWord(memory, controlBlock+0x6)
 				startAddress := peekWord(memory, controlBlock+0xa)
 				endAddress := peekWord(memory, controlBlock+0xe)
 
@@ -144,18 +146,35 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 
 				fmt.Printf("{{%04x-%04x}}", startAddress, endAddress)
 				switch a {
-				case 0: // Save a section of memory as a named file
+				case 0:
+					/*
+						Save a block of memory as a file using the
+						information provided in the parameter block.
+					*/
 					data := getMemSlice(memory, startAddress, filesize)
 					err := ioutil.WriteFile(filename, data, 0644)
 					if err != nil {
 						panic(err)
 					}
 				case 0xff: // Load file into memory
+					/*
+						Load the named file, the address to which the file is
+						loaded being determined by the lowest byte of the
+						execution address in the control block (XY+6). If
+						this byte is zero, the address given in the control
+						block is used, otherwise the file's own load address
+						is used.
+					*/
+					useLoadAddress := (executionAddress & 0xff) == 0
+					if !useLoadAddress {
+						panic("Loading files on their onw load address not simplemented")
+					}
 					data, err := ioutil.ReadFile(filename)
 					if err != nil {
 						panic(err)
 					}
-					filesize = storeSliceinMem(memory, startAddress, endAddress-startAddress, data)
+					// NOTE: There is no maxLength?
+					filesize = storeSliceinMem(memory, loadAddress, uint16(len(data)), data)
 					filesize = uint16(len(data))
 				}
 
@@ -209,7 +228,8 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 
 					// TODO: check max size
 					buffer := peekWord(memory, xy)
-					putStringInMem(memory, buffer, line+"\r")
+					maxLength := memory.Peek(xy + 2)
+					putStringInMem(memory, buffer, line+"\r", maxLength)
 					pOut := p &^ 1 // Clear carry
 					cpu.SetAXYP(1, x, uint8(len(line)), pOut)
 					log = fmt.Sprintf("OSWORD%02x('read line',BUF=0x%04x)='%s'", a, buffer, line)
@@ -217,11 +237,30 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 				default:
 					panic(fmt.Sprintf("OSWORD%02x call not supported", a))
 				}
+
 			case 0xfff4: // OSBYTE, page 408 BPUG
 				option := "unknonw"
 				switch a {
+				case 0x7e:
+					option = "Ack detection of an ESC condition"
+					/*
+						If an ESCAPE condition is detected, all active buffers will be flushed
+						and any open EXEC files will be closed. There are no entry conditions;
+						on exit, X=255 if the ESCAPE condition existed (X=0 otherwise), A is
+						preserved, Y and C are undefined
+					*/
+					cpu.SetAXYP(a, 0, y, p)
 				case 0x82:
 					option = "Read machine high order address"
+					/*
+						This call provides a 16 bit high order address for filing system
+						addresses which require 32 bits. As the BBC microcomputer
+						uses 16 bit addresses internally a padding value must be
+						provided which associates a given address to that machine.
+						On exit, X and Y contain the padding address (X-high, Y-low)
+						(This address is &FFFF for the BBC microcomputer I/O
+						processor)
+					*/
 					cpu.SetAXYP(a, 0xff, 0xff, p)
 				case 0x83:
 					option = "Read bottom of user mem"
@@ -235,26 +274,34 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 						uint8(langRomStart&0xff),
 						uint8(langRomStart>>8),
 						p)
-				case 0x7e:
-					option = "Ack detection of an ESC condition"
-					/*
-						If an ESCAPE condition is detected, all active buffers will be flushed
-						and any open EXEC files will be closed. There are no entry conditions;
-						on exit, X=255 if the ESCAPE condition existed (X=0 otherwise), A is
-						preserved, Y and C are undefined
-					*/
-					cpu.SetAXYP(a, 0, y, p)
 				case 0xda:
 					option = "R/W number of items in VDU"
+					/*
+						Writing 0 to this location can be a useful way of abandoning a
+						VDU queue otherwise writing to this location is not
+						recommended.
+					*/
 					if x != 0 || y != 0 {
 						panic("OSBYTEda only supported for x=0 and y=0")
 					}
 					// TODO; complete
-					// if x an y are zero, we are clearing the VDU queue
 				default:
 					panic(fmt.Sprintf("OSBYTE%02x call not supported", a))
 				}
 				log = fmt.Sprintf("OSBYTE%02x('%s',X=0x%02x,Y=0x%02x)", a, option, x, y)
+
+			case 0xfff7:
+				/*
+					This routine passes a line of text to the command line
+					interpreter which decodes and executes any command
+					recognised.
+					X and Y should point to a line of text terminated by a
+					carriage return character (ASCII &0D/13)
+				*/
+				xy := uint16(x) + uint16(y)<<8
+				command := getStringFromMem(memory, xy, 0x0d)
+				log = fmt.Sprintf("OSCLI('%s')", command)
+
 			default:
 				panic(fmt.Sprintf("MOS call to 0x%04x not implemented", pc))
 			}
@@ -265,8 +312,8 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 	}
 }
 
-func putStringInMem(mem core6502.Memory, address uint16, s string) {
-	for i := 0; i < len(s); i++ {
+func putStringInMem(mem core6502.Memory, address uint16, s string, maxLength uint8) {
+	for i := 0; i < len(s) && i < int(maxLength); i++ {
 		mem.Poke(address+uint16(i), s[i])
 	}
 }
