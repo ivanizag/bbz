@@ -136,7 +136,7 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 				*/
 				controlBlock := uint16(x) + uint16(y)<<8
 				filenameAddress := peekWord(memory, controlBlock)
-				loadAddress := peekWord(memory, controlBlock+0x3)
+				loadAddress := peekWord(memory, controlBlock+0x2)
 				executionAddress := peekWord(memory, controlBlock+0x6)
 				startAddress := peekWord(memory, controlBlock+0xa)
 				endAddress := peekWord(memory, controlBlock+0xe)
@@ -144,7 +144,6 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 				filename := getStringFromMem(memory, filenameAddress, 0x0d)
 				filesize := endAddress - startAddress
 
-				fmt.Printf("{{%04x-%04x}}", startAddress, endAddress)
 				switch a {
 				case 0:
 					/*
@@ -167,14 +166,14 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 					*/
 					useLoadAddress := (executionAddress & 0xff) == 0
 					if !useLoadAddress {
-						panic("Loading files on their onw load address not simplemented")
+						panic("Loading files on their own load address not simplemented")
 					}
 					data, err := ioutil.ReadFile(filename)
 					if err != nil {
 						panic(err)
 					}
 					// NOTE: There is no maxLength?
-					filesize = storeSliceinMem(memory, loadAddress, uint16(len(data)), data)
+					storeSliceinMem(memory, loadAddress, uint16(len(data)), data)
 					filesize = uint16(len(data))
 				}
 

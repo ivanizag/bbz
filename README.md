@@ -22,7 +22,7 @@ References:
 - Applecorn source code: https://github.com/bobbimanners/Applecorn
 
 ## Features
-Very few of the MOS entrypoints are defined, the minimum needed to start BBC Basic.
+Very few of the MOS entrypoints are defined, the minimum needed to start BBC Basic, save and load programs.
 The program quits on any API call not supported.
 
 
