@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"time"
 	"unicode"
 
 	"github.com/ivanizag/izapple2/core6502"
@@ -25,6 +26,7 @@ const (
 
 func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bool) {
 	console := bufio.NewScanner(os.Stdin)
+	referenceTime := time.Now() // Use by OSWORD01
 
 	// Prepare cpu and memory
 	memory := new(core6502.FlatMemory)
@@ -231,7 +233,26 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 					putStringInMem(memory, buffer, line+"\r", maxLength)
 					pOut := p &^ 1 // Clear carry
 					cpu.SetAXYP(1, x, uint8(len(line)), pOut)
-					log = fmt.Sprintf("OSWORD%02x('read line',BUF=0x%04x)='%s'", a, buffer, line)
+					log = fmt.Sprintf("OSWORD00('read line',BUF=0x%04x)='%s'", buffer, line)
+
+				case 0x01: // Read system clock
+					/*
+						This routine may be used to read the system clock (used for the
+						TIME function in BASIC). The five byte clock value is written to
+						the address contained in the X and Y registers. This clock is
+						incremented every hundredth of a second and is set to 0 by a
+						hard BREAK.
+					*/
+					duration := time.Since(referenceTime)
+					ticks := duration.Milliseconds() / 10
+					ticksLog := ticks & 0xff_ffff_ffff // 5 bytes
+					buffer := peekWord(memory, xy)
+					fmt.Printf("0x%04x, %v, %v, %v, %v\n", xy, buffer, referenceTime, duration, ticks)
+					for i := uint16(0); i < 5; i++ {
+						memory.Poke(buffer+i, uint8(ticks&0xff))
+						ticks >>= 8
+					}
+					log = fmt.Sprintf("OSWORD01('read system clock',BUF=0x%04x)=%v", buffer, ticksLog)
 
 				default:
 					panic(fmt.Sprintf("OSWORD%02x call not supported", a))
@@ -273,6 +294,12 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 						uint8(langRomStart&0xff),
 						uint8(langRomStart>>8),
 						p)
+				case 0x85:
+					option = "Read top of user mem for mode"
+					cpu.SetAXYP(a,
+						uint8(langRomStart&0xff),
+						uint8(langRomStart>>8),
+						p)
 				case 0xda:
 					option = "R/W number of items in VDU"
 					/*
@@ -299,6 +326,10 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 				*/
 				xy := uint16(x) + uint16(y)<<8
 				command := getStringFromMem(memory, xy, 0x0d)
+				switch command {
+				case "*HELP":
+					fmt.Printf("bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz\n")
+				}
 				log = fmt.Sprintf("OSCLI('%s')", command)
 
 			default:
