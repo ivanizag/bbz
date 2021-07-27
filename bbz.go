@@ -133,6 +133,34 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 				cpu.SetPC(brkv)
 				log = fmt.Sprintf("BREAK(ERR=%02x, '%s'", faultNumber, faultString)
 
+			case 0xffda: // OSARGS
+				/*
+					Call address &FFDA Indirected through &214
+					This routine reads or writes an open file's attributes.
+					On entry, X points to a four byte zero page control block.
+					Y contains the file handle as provided by OSFIND, or zero.
+					The accumulator contains a number specifying the action required.
+				*/
+				if y == 0 {
+					switch a {
+					case 0:
+						// Returns the current filing system in A
+						filingSystem := 4 // Disc filling system
+						log = fmt.Sprintf("OSARGS('Get fiing system',A=%02x,Y=%02x)= %v", a, y, filingSystem)
+					case 0xff:
+						/*
+							Update all files onto the media, ie ensure that the latest copy
+							of the memory buffer is saved.
+							We will do nothing.
+						*/
+						log = "OSARGS('Update all files onto the media')"
+					default:
+						panic(fmt.Sprintf("OSARGS(A=%02x,Y=%02x) not implemented", a, y))
+					}
+				} else {
+					panic(fmt.Sprintf("OSARGS(A=%02x,Y=%02x) not implemented", a, y))
+				}
+
 			case 0xffdd: // OSFILE: Load or save a complete file. BPUG page 446
 				/*
 					http://beebwiki.mdfs.net/OSFILE
@@ -183,16 +211,51 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 				pokeWord(memory, controlBlock+0xa, filesize)
 				pokeWord(memory, controlBlock+0x3, 0x33 /*attributes*/)
 
-				log = fmt.Sprintf("OSFILE(A=%02x,FCB=%04x,FILE=%s,SIZE=%v", a, controlBlock, filename, filesize)
+				log = fmt.Sprintf("OSFILE(A=%02x,FCB=%04x,FILE=%s,SIZE=%v)", a, controlBlock, filename, filesize)
+
+			case 0xffe0: // OSRDCH
+				/*
+					This routine reads a character from the currently selected input
+					stream and returns the character read in the accumulator.
+					After an OSRDCH call: C=0 indicates that a valid character has
+					been read; C=1 flags an error condition, A contains an error number.
+				*/
+				console.Scan()
+				line := console.Text()
+				// TODO: capture keystrokes. We will just get the first chat of the line
+				// and ignore the rest.
+				ch := strings.ToUpper(line)[0]
+				pOut := p &^ 1 // Clear carry
+				cpu.SetAXYP(ch, x, y, pOut)
+
+				log = fmt.Sprintf("OSRDCH()=0x%02x", ch)
+
+			case 0xffe3: // OSASCI
+				/*
+					This routine performs an OSWRCH call with the accumulator
+					contents unless called with accumulator contents of &0D (13)
+					when an OSNEWL call is performed.
+				*/
+				ch := string(a)
+				if a == 0x0d {
+					fmt.Println()
+				} else {
+					fmt.Printf("%v", ch)
+				}
+
+				if !unicode.IsGraphic([]rune(ch)[0]) {
+					ch = ""
+				}
+				log = fmt.Sprintf("OSWRCH(0x%02x, '%v')", a, string(a))
+				isIO = true
 
 			case 0xffe7: // OSNEWL
 				/*
 					This call issues an LF CR (line feed, carriage return) to the currently
-					selected output stream. The routine is entered at &FFE7.
-					On exit X and Y are preserved, C, N, V and Z are undefined and D=0. The
-					interrupt state is preserved.
+					selected output stream.
 				*/
 				fmt.Println()
+
 				log = "OSNEWL()"
 				isIO = true
 
@@ -202,9 +265,9 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 					stream.
 					On exit A, X and Y are preserved, C, N, V and Z are undefined and D=0.
 				*/
-				fmt.Printf("%v", string(a))
-
 				ch := string(a)
+				fmt.Printf("%v", ch)
+
 				if !unicode.IsGraphic([]rune(ch)[0]) {
 					ch = ""
 				}
@@ -232,10 +295,14 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 					// TODO: check max size
 					buffer := peekWord(memory, xy)
 					maxLength := memory.Peek(xy + 2)
+					minChar := memory.Peek(xy + 3)
+					maxChar := memory.Peek(xy + 4)
 					putStringInMem(memory, buffer, line+"\r", maxLength)
 					pOut := p &^ 1 // Clear carry
 					cpu.SetAXYP(1, x, uint8(len(line)), pOut)
-					log = fmt.Sprintf("OSWORD00('read line',BUF=0x%04x)='%s'", buffer, line)
+
+					log = fmt.Sprintf("OSWORD00('read line',BUF=0x%04x,range=%02x-%02x, maxlen=%v)='%s'",
+						buffer, minChar, maxChar, maxLength, line)
 
 				case 0x01: // Read system clock
 					/*
@@ -249,12 +316,45 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 					ticks := duration.Milliseconds() / 10
 					ticksLog := ticks & 0xff_ffff_ffff // 5 bytes
 					buffer := peekWord(memory, xy)
-					fmt.Printf("0x%04x, %v, %v, %v, %v\n", xy, buffer, referenceTime, duration, ticks)
 					for i := uint16(0); i < 5; i++ {
 						memory.Poke(buffer+i, uint8(ticks&0xff))
 						ticks >>= 8
 					}
+
 					log = fmt.Sprintf("OSWORD01('read system clock',BUF=0x%04x)=%v", buffer, ticksLog)
+
+				case 0x02: // Write system clock
+					/*
+						This routine may be used to set the system clock to a five byte
+						value contained in memory at the address contained in the X
+						and Y registers.
+					*/
+					buffer := peekWord(memory, xy)
+					ticks := uint64(0)
+					for i := uint16(0); i < 5; i++ {
+						ticks <<= 8
+						ticks += uint64(memory.Peek(buffer + i))
+					}
+					duration := time.Duration(ticks * 100 * 1000)
+					referenceTime = time.Now()
+					referenceTime.Add(duration * -1)
+
+					log = fmt.Sprintf("OSWORD02('write system clock',TICKS=%v)", ticks)
+
+				case 0x05: // Read I/O processor memory
+					/*
+						A byte of I/O processor memory may be read across the Tube
+						using this call. A 32 bit address should be contained in memory
+						at the address contained in the X and Y registers.
+						On exit, The byte read will be contained in location XY+4.
+					*/
+					address := uint32(peekWord(memory, xy)) +
+						uint32(peekWord(memory, xy+2))<<16
+					value := memory.Peek((uint16(address)))
+					memory.Poke(xy+4, value)
+
+					log = fmt.Sprintf("OSWORD05('Read I/O processor memory',ADDRESS=0x%08x)=0x%02x",
+						address, value)
 
 				default:
 					panic(fmt.Sprintf("OSWORD%02x call not supported", a))
