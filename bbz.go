@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 	"unicode"
 
@@ -226,6 +227,7 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 					*/
 					console.Scan()
 					line := console.Text()
+					line = strings.ToUpper(line)
 
 					// TODO: check max size
 					buffer := peekWord(memory, xy)
