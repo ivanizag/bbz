@@ -25,12 +25,6 @@ References:
 Not all of the MOS entrypoints are defined and it ignores the VDU control codes.
 Can run BBC BASIC, including load and save, and most of the language ROMs.
 
-## Build
-```
-$ cd main
-$ go build -o bbz
-```
-
 ## Usage 
 
 ```
