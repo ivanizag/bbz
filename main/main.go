@@ -22,6 +22,10 @@ func main() {
 		"M",
 		false,
 		"dump to the console the MOS calls including console I/O calls")
+	panicOnErr := flag.Bool(
+		"p",
+		false,
+		"panic on not implemented MOS calls")
 
 	flag.Parse()
 
@@ -30,5 +34,5 @@ func main() {
 		romFile = "BASIC.ROM"
 	}
 
-	bbz.RunMOSEnvironment(romFile, *traceCPU, (*traceMOS) || (*traceMOSFull), *traceMOSFull)
+	bbz.RunMOSEnvironment(romFile, *traceCPU, (*traceMOS) || (*traceMOSFull), *traceMOSFull, *panicOnErr)
 }

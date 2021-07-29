@@ -22,9 +22,14 @@ References:
 - Applecorn source code: https://github.com/bobbimanners/Applecorn
 
 ## Features
-Very few of the MOS entrypoints are defined, the minimum needed to start BBC Basic, save and load programs.
-The program quits on any API call not supported.
+Not all of the MOS entrypoints are defined and it ignores the VDU control codes.
+Can run BBC BASIC, including load and save, and most of the language ROMs.
 
+## Build
+```
+$ cd main
+$ go build -o bbz
+```
 
 ## Usage 
 
@@ -41,6 +46,7 @@ Avaliable flags (to put before the ROM filename if present):
   -M	dump to the console the MOS calls including console I/O calls
   -c	dump to the console the CPU execution operations
   -m	dump to the console the MOS calls excluding console I/O calls
+  -p	panic on not implemented MOS calls
 ```
 
 ## Usage example
