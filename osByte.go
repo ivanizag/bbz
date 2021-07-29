@@ -1,4 +1,4 @@
-package bbz
+package main
 
 import "fmt"
 

@@ -3,8 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-
-	"github.com/ivanizag/bbz"
 )
 
 func main() {
@@ -34,5 +32,5 @@ func main() {
 		romFile = "BASIC.ROM"
 	}
 
-	bbz.RunMOSEnvironment(romFile, *traceCPU, (*traceMOS) || (*traceMOSFull), *traceMOSFull, *panicOnErr)
+	RunMOSEnvironment(romFile, *traceCPU, (*traceMOS) || (*traceMOSFull), *traceMOSFull, *panicOnErr)
 }

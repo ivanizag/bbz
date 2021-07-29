@@ -11,12 +11,6 @@ github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7/go.mod h1:482civXOzJJCPzJ
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200625191551-73d3c3675aa3/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
 github.com/godbus/dbus/v5 v5.0.3/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
 github.com/goki/freetype v0.0.0-20181231101311-fa8a33aabaff/go.mod h1:wfqRWLHRBsRgkp5dmbG56SA0DmVtwrF5N3oPdI8t+Aw=
-github.com/ivanizag/izapple2 v0.0.0-20210724120250-49a425b72766 h1:3UxseWR6d0jNrrnADNoGlNJAXljR00GitqjBECrf6mE=
-github.com/ivanizag/izapple2 v0.0.0-20210724120250-49a425b72766/go.mod h1:ZtgEmfBzD4iIgfi844RRePWMbN1f1kaHJ2e4r3RvXB0=
-github.com/ivanizag/izapple2 v0.0.0-20210724153009-b1d4d53869e7 h1:6DLMTN/xEuObh1PSSGfCMkxRbjb321ArYhLo8sTNkfQ=
-github.com/ivanizag/izapple2 v0.0.0-20210724153009-b1d4d53869e7/go.mod h1:ZtgEmfBzD4iIgfi844RRePWMbN1f1kaHJ2e4r3RvXB0=
-github.com/ivanizag/izapple2 v0.0.0-20210724173735-612adbc11f71 h1:La0Qhebyc+7g/cECbJ69crnHAUeIhU9OM18VNw4D3wg=
-github.com/ivanizag/izapple2 v0.0.0-20210724173735-612adbc11f71/go.mod h1:ZtgEmfBzD4iIgfi844RRePWMbN1f1kaHJ2e4r3RvXB0=
 github.com/ivanizag/izapple2 v0.0.0-20210725095035-e47730e13158 h1:Dtl4h+suIayEjnnuJI6BcBuuN1a2+HpaaKEQ5Q7pCZ4=
 github.com/ivanizag/izapple2 v0.0.0-20210725095035-e47730e13158/go.mod h1:ZtgEmfBzD4iIgfi844RRePWMbN1f1kaHJ2e4r3RvXB0=
 github.com/jackmordaunt/icns v0.0.0-20181231085925-4f16af745526/go.mod h1:UQkeMHVoNcyXYq9otUupF7/h/2tmHlhrS2zw7ZVvUqc=
