@@ -11,15 +11,16 @@ builds:
       - windows
       - darwin
 archives:
-  - replacements:
+  -
+    replacements:
       darwin: Darwin
       linux: Linux
       windows: Windows
       386: i386
       amd64: x86_64
-  files:
-  - BASIC,ROM
-  - ROMS/*
+    files:
+      - BASIC,ROM
+      - ROMS/*
 checksum:
   name_template: 'checksums.txt'
 snapshot:
