@@ -22,7 +22,7 @@ archives:
       - README.md
       - LICENSE
       - BASIC.ROM
-      - ROMS/*
+      - ROMs/*
 checksum:
   name_template: 'checksums.txt'
 snapshot:
