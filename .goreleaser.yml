@@ -19,6 +19,8 @@ archives:
       386: i386
       amd64: x86_64
     files:
+      - README.md
+      - LICENSE
       - BASIC.ROM
       - ROMS/*
 checksum:
