@@ -2,10 +2,7 @@
 # Make sure to check the documentation at http://goreleaser.com
 before:
   hooks:
-    # You may remove this if you don't use go modules.
     - go mod tidy
-    # you may remove this if you don't need go generate
-    - go generate ./...
 builds:
   - env:
       - CGO_ENABLED=0
@@ -20,6 +17,9 @@ archives:
       windows: Windows
       386: i386
       amd64: x86_64
+  files:
+  - BASIC,ROM
+  - ROMS/*
 checksum:
   name_template: 'checksums.txt'
 snapshot:
