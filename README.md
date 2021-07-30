@@ -74,7 +74,7 @@ $ ls -l TEST
 
 Log of the MOS calls (excluding the most verbose output API calls):
 ```
-$ ./bbz -m ROMs/Forth_103.rom 
+$ ./bbz -m ROMs/Forth_103.rom
 bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz
 
 FORTH - (C) Acornsoft Ltd. 1983
