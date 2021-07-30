@@ -19,6 +19,7 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 	env.mem = new(core6502.FlatMemory)
 	env.cpu = core6502.NewNMOS6502(env.mem)
 	env.cpu.SetTrace(cpuLog)
+	env.vdu = newVdu()
 
 	env.loadRom(romFilename)
 	env.loadMos()
@@ -105,6 +106,7 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 
 			case 0xffdd: // OSFILE: Load or save a complete file. BPUG page 446
 				execOSFILE(&env)
+
 			case 0xffe0: // OSRDCH
 				/*
 					This routine reads a character from the currently selected input
@@ -128,42 +130,22 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 					contents unless called with accumulator contents of &0D (13)
 					when an OSNEWL call is performed.
 				*/
-				ch := string(a)
-				if a == 0x0d {
-					fmt.Println()
-				} else {
-					fmt.Printf("%v", ch)
-				}
-
-				if !unicode.IsGraphic([]rune(ch)[0]) {
-					ch = ""
-				}
-
-				env.logIO(fmt.Sprintf("OSWRCH(0x%02x, '%v')", a, string(a)))
+				env.vdu.writeAscii(a)
+				env.logIO(fmt.Sprintf("OSASXCI(0x%02x, '%v')", a, printableChar(a)))
 
 			case 0xffe7: // OSNEWL
 				/*
-					This call issues an LF CR (line feed, carriage return) to the currently
-					selected output stream.
+					This call issues an LF CR to the currently selected output stream.
 				*/
 				fmt.Println()
-
 				env.logIO("OSNEWL()")
 
 			case 0xffee: // OSWRCH
 				/*
-					This call writes the character in A to the currently selected output
-					stream.
-					On exit A, X and Y are preserved, C, N, V and Z are undefined and D=0.
+					This call writes the character in A to the currently selected output stream.
 				*/
-				ch := string(a)
-				fmt.Printf("%v", ch)
-
-				if !unicode.IsGraphic([]rune(ch)[0]) {
-					ch = ""
-				}
-
-				env.logIO(fmt.Sprintf("OSWRCH(0x%02x, '%v')", a, string(a)))
+				env.vdu.write(a)
+				env.logIO(fmt.Sprintf("OSWRCH(0x%02x, '%v')", a, printableChar(a)))
 
 			case 0xfff1: // OSWORD
 				execOSWORD(&env)
@@ -177,4 +159,12 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 			}
 		}
 	}
+}
+
+func printableChar(i uint8) string {
+	ch := string(i)
+	if !unicode.IsGraphic([]rune(ch)[0]) {
+		ch = ""
+	}
+	return ch
 }

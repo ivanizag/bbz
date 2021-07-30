@@ -29,6 +29,7 @@ const (
 type environment struct {
 	cpu           *core6502.State
 	mem           core6502.Memory
+	vdu           *vdu
 	in            *bufio.Scanner
 	referenceTime time.Time
 	apiLog        bool
