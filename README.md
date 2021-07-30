@@ -22,8 +22,10 @@ References:
 - Applecorn source code: https://github.com/bobbimanners/Applecorn
 
 ## Features
-Not all of the MOS entrypoints are defined and it ignores the VDU control codes.
-Can run BBC BASIC, including load and save, and most of the language ROMs.
+- Some of the MOS entrypoints and VDU control codes are defined.
+- Can run BBC BASIC and most of the language ROMs.
+- Saves and loads files from the host filesystem.
+- Does some of the mode 7 text coloring using ANSI escape codes on the terminal. Try `VDU 65,129,66,130,67,132,68,135,69,13,10` on BBC BASIC.
 
 ## Usage 
 
@@ -50,40 +52,50 @@ Running BBC Basic:
 $ ./bbz
 bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz
 
+BASIC - (C)1982 Acorn
+
 >PRINT "HELLO"
 HELLO
->10 A=12
->20 PRINT A
->LIST
-   10 A=12
-   20 PRINT A
+>10 PRINT "HEY"
 >RUN
-        12
->HEY
+HEY
+>SAVE "TEST"
+>NEW
+>LOAD "TEST"
+>LIST
+   10 PRINT "HEY"
+>X
 
 Mistake
->^C
-$
+>^Csignal: interrupt
+$ ls -l TEST
+-rw-r--r-- 1 casa casa 14 jul 30 20:04 TEST
 ```
 
 Log of the MOS calls (excluding the most verbose output API calls):
 ```
-$ ./bbz -m
+$ ./bbz -m ROMs/Forth_103.rom 
 bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz
 
-[[[OSBYTE84('Read top of user mem',X=0x00,Y=0x00)]]]
-[[[OSBYTE83('Read bottom of user mem',X=0x00,Y=0x80)]]]
->PRINT "HELLO"
-[[[OSWORD00('read line',BUF=0x0700)='PRINT "HELLO"']]]
-HELLO
->HEY
-[[[OSWORD00('read line',BUF=0x0700)='HEY']]]
-[[[BREAK(ERR=04, 'Mistake']]]
-[[[OSBYTEda('R/W number of items in VDU',X=0x00,Y=0x00)]]]
-[[[OSBYTE7e('Ack detection of an ESC condition',X=0x00,Y=0x00)]]]
+FORTH - (C) Acornsoft Ltd. 1983
 
-Mistake
->^C
-$
+COLD or WARM start (C/W)? C
+[[[OSRDCH()=0x43]]]
+[[[OSARGS('Get fiing system',A=00,Y=00)= 4]]]
+[[[OSBYTE82('Read machine high order address',X=0x58,Y=0x00) => (X=0xff,Y=0xff)]]]
+[[[OSBYTE84('Read top of user mem',X=0x58,Y=0x00) => (X=0x00,Y=0x80)]]]
+[[[OSBYTE83('Read bottom of user mem',X=0x58,Y=0x00) => (X=0x00,Y=0x0e)]]]
+
+
+FORTH
+OK
+2 1 + .
+[[[OSWORD00('read line',BUF=0x0542,range=20-ff, maxlen=80)='2 1 + .']]]
+3 OK
+
 ```
+
+Using mode 7 colors:
+
+![mode 7 colors](doc/vdu_colors.png)
 

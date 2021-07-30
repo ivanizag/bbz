@@ -34,6 +34,7 @@ func execOSWORD(env *environment) {
 		env.putStringInMem(buffer, line+"\r", maxLength)
 		pOut := p &^ 1 // Clear carry
 		env.cpu.SetAXYP(1, x, uint8(len(line)), pOut)
+		env.vdu.mode7Reset()
 
 		env.log(fmt.Sprintf("OSWORD00('read line',BUF=0x%04x,range=%02x-%02x, maxlen=%v)='%s'",
 			buffer, minChar, maxChar, maxLength, line))

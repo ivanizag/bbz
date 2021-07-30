@@ -137,7 +137,7 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 				/*
 					This call issues an LF CR to the currently selected output stream.
 				*/
-				fmt.Println()
+				env.vdu.writeNewline()
 				env.logIO("OSNEWL()")
 
 			case 0xffee: // OSWRCH

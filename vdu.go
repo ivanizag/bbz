@@ -5,9 +5,16 @@ import "fmt"
 type vdu struct {
 	queue []uint8
 
-	mode        uint8
+	mode uint8
+
+	// Mode 0-6
 	textColour  uint8
 	graphColour uint8
+
+	// Mode 7
+	m7fgColour uint8
+	m7bgColour uint8
+	m7Flash    bool
 
 	// Toogles
 	printer  bool // VDU2 and VDU3
@@ -36,6 +43,7 @@ func newVdu() *vdu {
 	var v vdu
 	// Mode 7 on startup
 	v.mode = 7
+	v.m7fgColour = 7 // white
 
 	return &v
 }
@@ -68,6 +76,7 @@ func (v *vdu) write(i uint8) {
 		if argsNeeded[v.queue[0]] == len(v.queue)-1 {
 			// We have enough args
 			v.exec(v.queue[0], v.queue[1:])
+			v.queue = nil
 		}
 	}
 }
@@ -160,7 +169,8 @@ func (v *vdu) exec(cmd uint8, q []uint8) {
 		   cursor is already on the bottom line then the whole display will normally be
 		   moved up one line.
 		*/
-		out = "\x1b[B" // Not the normal \n, here we need \r\n
+		//out = "\x1b[B" // Not the normal \n, here we need \r\n
+		out = v.mode7ResetCode() + string(cmd)
 	case 11:
 		/*
 		   This code (VDU11 or CTRL K) moves the text cursor up one line. If the cursor
@@ -174,7 +184,7 @@ func (v *vdu) exec(cmd uint8, q []uint8) {
 		   statement CLS has exactly the same effect as VDU12, or CTRL L. This code also
 		   moves the text cursor to the top left of the text window.
 		*/
-		out = "\x1b[2J\x1b[H"
+		out = v.mode7ResetCode() + "\x1b[2J\x1b[H"
 	case 13:
 		/*
 		   This code is produced by the RETURN key. However, its effect on the screen
@@ -182,7 +192,7 @@ func (v *vdu) exec(cmd uint8, q []uint8) {
 		   the left hand edge of the current text line (but within the current text window, of
 		   course).
 		*/
-		out = string(cmd)
+		out = v.mode7ResetCode() + string(cmd)
 	case 14:
 		/*
 		   This code makes the screen display wait at the bottom of each page. It is
@@ -303,7 +313,7 @@ func (v *vdu) exec(cmd uint8, q []uint8) {
 			does not change HIMEM).
 		*/
 		v.mode = q[0]
-		fmt.Printf("<<Changed to mode %v>>", v.mode)
+		out = v.mode7ResetCode()
 	case 23:
 		/*
 			This code is used to reprogram displayed characters. The ASCII code assigns
@@ -353,7 +363,7 @@ func (v *vdu) exec(cmd uint8, q []uint8) {
 		   sets the graphics origin to the bottom left of the screen. In this state it is possible
 		   to write text and to draw graphics anywhere on the screen.
 		*/
-		out = "\x1b[H"
+		out = v.mode7ResetCode() + "\x1b[H"
 		// TODO: graphics reset
 	case 27:
 		/*
@@ -393,7 +403,7 @@ func (v *vdu) exec(cmd uint8, q []uint8) {
 		   This code (VDU30 or CTRL ^) moves the text cursor to the top left of the text
 		   area.
 		*/
-		out = "\x1b[H"
+		out = v.mode7ResetCode() + "\x1b[H"
 	case 31:
 		/*
 		   The code VDU31 enables the text cursor to be moved to any character position
@@ -414,11 +424,42 @@ func (v *vdu) exec(cmd uint8, q []uint8) {
 		   key.
 		*/
 		out = "\x1b[D \x1b[D"
+
 	default:
 		if v.mode == 7 {
-			// TODO: process MODE7 control codes
-			out = adjustAsciiMode7(cmd)
+			/*
+				The order of colors is: black, red, green, yellow, blue, magenta,
+				cyan and white for mmode 7 and for ANSI.
+				Red is:
+				 - 129 as control code
+				 . 1 as m7fgColour and m7bgColour
+				 . 31 as ANSI fg color
+				 - 41 as ANSI bg color
+			*/
+			switch {
+			case 129 <= cmd && cmd <= 135: // Text colors
+				v.m7fgColour = cmd - 129 + 1
+				out = fmt.Sprintf("\x1b[%vm ", v.m7fgColour+30)
+			case cmd == 136: // Flash
+				v.m7Flash = true
+				out = "\x1b[5m "
+			case cmd == 137: // Steady (not flash)
+				v.m7Flash = false
+				out = "\x1b[25m "
+			case cmd == 156: // Black background
+				v.m7bgColour = 0
+				out = fmt.Sprintf("\x1b[%vm ", v.m7bgColour+40)
+			case cmd == 157: // New background
+				v.m7bgColour = v.m7fgColour
+				out = fmt.Sprintf("\x1b[%vm ", v.m7bgColour+40)
+			case 128 <= cmd && cmd <= 159: // Rest
+				out = " "
+			default:
+				out = adjustAsciiMode7(cmd)
+			}
+
 		} else {
+			// Modes 0 to 6
 			switch {
 			case 32 <= cmd && cmd <= 126:
 				/*
@@ -448,6 +489,30 @@ func (v *vdu) exec(cmd uint8, q []uint8) {
 	if out != "" && !v.ignore {
 		fmt.Print(out)
 	}
+}
+
+func (v *vdu) mode7ResetCode() string {
+	if v.mode != 7 {
+		return ""
+	}
+	out := ""
+	if v.m7fgColour != 7 /* white */ {
+		out += "\x1b[37m"
+		v.m7fgColour = 7
+	}
+	if v.m7bgColour != 0 /* black */ {
+		out += "\x1b[40m"
+		v.m7bgColour = 0
+	}
+	if v.m7Flash {
+		out += "\x1b[25m"
+		v.m7Flash = false
+	}
+	return out
+}
+
+func (v *vdu) mode7Reset() {
+	fmt.Print(v.mode7ResetCode())
 }
 
 func adjustAscii(ch uint8) string {
