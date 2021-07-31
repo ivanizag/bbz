@@ -89,7 +89,7 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 					case 0:
 						// Returns the current filing system in A
 						filingSystem := 4 // Disc filling system
-						env.log(fmt.Sprintf("OSARGS('Get fiing system',A=%02x,Y=%02x)= %v", a, y, filingSystem))
+						env.log(fmt.Sprintf("OSARGS('Get filing system',A=%02x,Y=%02x)= %v", a, y, filingSystem))
 					case 0xff:
 						/*
 							Update all files onto the media, ie ensure that the latest copy

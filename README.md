@@ -81,7 +81,7 @@ FORTH - (C) Acornsoft Ltd. 1983
 
 COLD or WARM start (C/W)? C
 [[[OSRDCH()=0x43]]]
-[[[OSARGS('Get fiing system',A=00,Y=00)= 4]]]
+[[[OSARGS('Get filing system',A=00,Y=00)= 4]]]
 [[[OSBYTE82('Read machine high order address',X=0x58,Y=0x00) => (X=0xff,Y=0xff)]]]
 [[[OSBYTE84('Read top of user mem',X=0x58,Y=0x00) => (X=0x00,Y=0x80)]]]
 [[[OSBYTE83('Read bottom of user mem',X=0x58,Y=0x00) => (X=0x00,Y=0x0e)]]]
