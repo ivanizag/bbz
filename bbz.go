@@ -29,7 +29,7 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 	env.panicOnErr = panicOnErr
 
 	// Execute
-	for {
+	for !env.stop {
 		env.cpu.ExecuteInstruction()
 
 		pc, sp := env.cpu.GetPCAndSP()
@@ -114,7 +114,9 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 					After an OSRDCH call: C=0 indicates that a valid character has
 					been read; C=1 flags an error condition, A contains an error number.
 				*/
-				env.in.Scan()
+				if !env.in.Scan() {
+					return
+				}
 				line := env.in.Text()
 				// TODO: capture keystrokes. We will just get the first chat of the line
 				// and ignore the rest.

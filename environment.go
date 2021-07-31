@@ -32,9 +32,11 @@ type environment struct {
 	vdu           *vdu
 	in            *bufio.Scanner
 	referenceTime time.Time
-	apiLog        bool
-	apiLogIO      bool
-	panicOnErr    bool
+	stop          bool
+
+	apiLog     bool
+	apiLogIO   bool
+	panicOnErr bool
 }
 
 func (env *environment) loadRom(filename string) {
