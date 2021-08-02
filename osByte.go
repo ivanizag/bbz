@@ -90,7 +90,9 @@ func execOSBYTE(env *environment) {
 			VDU queue otherwise writing to this location is not
 			recommended.
 		*/
-		if x != 0 || y != 0 {
+		if x == 0 || y == 0 {
+			env.vdu.clearQueue()
+		} else {
 			env.notImplemented("OSBYTEda for x or y not zero")
 		}
 

@@ -61,11 +61,15 @@ func (v *vdu) writeNewline() {
 	v.write('\n')
 }
 
+func (v *vdu) clearQueue() {
+	v.queue = nil
+}
+
 func (v *vdu) write(i uint8) {
 	if v.queue == nil {
 		if argsNeeded[i] == 0 {
 			// Single byte command
-			v.exec(i, nil)
+			v.writeInternal(i, nil)
 		} else {
 			// Store
 			v.queue = []uint8{i}
@@ -75,13 +79,13 @@ func (v *vdu) write(i uint8) {
 		v.queue = append(v.queue, i)
 		if argsNeeded[v.queue[0]] == len(v.queue)-1 {
 			// We have enough args
-			v.exec(v.queue[0], v.queue[1:])
+			v.writeInternal(v.queue[0], v.queue[1:])
 			v.queue = nil
 		}
 	}
 }
 
-func (v *vdu) exec(cmd uint8, q []uint8) {
+func (v *vdu) writeInternal(cmd uint8, q []uint8) {
 	out := ""
 	switch cmd {
 	case 0:
