@@ -28,7 +28,7 @@ func execOSFILE(env *environment) {
 		data := env.getMemSlice(startAddress, filesize)
 		err := ioutil.WriteFile(filename, data, 0644)
 		if err != nil {
-			panic(err)
+			env.raiseError(1, err.Error())
 		}
 	case 0xff: // Load file into memory
 		/*
@@ -45,7 +45,7 @@ func execOSFILE(env *environment) {
 		}
 		data, err := ioutil.ReadFile(filename)
 		if err != nil {
-			panic(err)
+			env.raiseError(1, err.Error())
 		}
 		// NOTE: There is no maxLength?
 		env.storeSliceinMem(loadAddress, uint16(len(data)), data)
