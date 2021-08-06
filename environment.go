@@ -20,6 +20,9 @@ const (
 	langCopyrightOffset uint16 = 0x8007
 	langRomName         uint16 = 0x8009
 
+	errorArea             uint16 = 0xfe00
+	errorMessageMaxLength int    = 100
+
 	mosVectors      uint16 = 0xff00
 	breakEntryPoint uint16 = 0xffb0 // Invented as there is not an address defined
 	vectorReset     uint16 = 0xfffc
@@ -27,13 +30,22 @@ const (
 )
 
 type environment struct {
-	cpu           *core6502.State
-	mem           core6502.Memory
-	vdu           *vdu
-	in            *bufio.Scanner
-	referenceTime time.Time
-	stop          bool
+	cpu *core6502.State
+	mem core6502.Memory
+	vdu *vdu
+	in  *bufio.Scanner
 
+	// clock, used by OSWORD01 and 02
+	referenceTime time.Time
+
+	// timer, used by OSWORD03 and 04
+	timer           uint64 // Only 40 bits are used
+	lastTimerUpdate time.Time
+
+	// behaviour
+	stop bool
+
+	// configuration
 	apiLog     bool
 	apiLogIO   bool
 	panicOnErr bool
@@ -108,6 +120,26 @@ func (env *environment) loadMos() {
 
 }
 
+func (env *environment) raiseError(code uint8, msg string) {
+	/*
+		The BBC microcomputer adopts a standard pattern of bytes
+		following a BRK instruction, this is:
+		A single byte error number
+		An error message
+		A zero byte to terminate the message
+
+		TODO: set proper error codes
+			http://chrisacorns.computinghistory.org.uk/docs/SJR/SJR_HDFSSysMgrManual.pdf
+	*/
+	env.mem.Poke(errorArea, 0x00 /* BRK opcode */)
+	env.mem.Poke(errorArea+1, code)
+	env.putStringInMem(errorArea+2, msg, 0, uint8(errorMessageMaxLength))
+
+	env.cpu.SetPC(errorArea)
+
+	env.log(fmt.Sprintf("RAISE(ERR=%02x, '%s')", code, msg))
+}
+
 func (env *environment) log(msg string) {
 	if env.apiLog {
 		fmt.Printf("[[[%s]]]\n", msg)
@@ -125,13 +157,16 @@ func (env *environment) notImplemented(feature string) {
 	if env.panicOnErr {
 		panic(msg)
 	}
-	fmt.Printf("[[[%s]]]\n", msg)
+	env.log(msg)
 }
 
-func (env *environment) putStringInMem(address uint16, s string, maxLength uint8) {
-	for i := 0; i < len(s) && i < int(maxLength); i++ {
+func (env *environment) putStringInMem(address uint16, s string, terminator uint8, maxLength uint8) {
+	// maxLength not including terminator
+	var i int
+	for i = 0; i < len(s) && i < int(maxLength); i++ {
 		env.mem.Poke(address+uint16(i), s[i])
 	}
+	env.mem.Poke(address+uint16(i), terminator)
 }
 
 func (env *environment) getStringFromMem(address uint16, terminator uint8) string {
@@ -171,4 +206,20 @@ func (env *environment) peekWord(address uint16) uint16 {
 func (env *environment) pokeWord(address uint16, value uint16) {
 	env.mem.Poke(address, uint8(value&0xff))
 	env.mem.Poke(address+1, uint8(value>>8))
+}
+
+func (env *environment) peek5bytes(address uint16) uint64 {
+	ticks := uint64(0)
+	for i := uint16(0); i < 5; i++ {
+		ticks <<= 8
+		ticks += uint64(env.mem.Peek(address + i))
+	}
+	return ticks
+}
+
+func (env *environment) poke5bytes(address uint16, value uint64) {
+	for i := uint16(0); i < 5; i++ {
+		env.mem.Poke(address+i, uint8(value&0xff))
+		value >>= 8
+	}
 }

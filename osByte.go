@@ -1,11 +1,15 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 func execOSBYTE(env *environment) {
 	a, x, y, p := env.cpu.GetAXYP()
 	newA, newX, newY, newP := a, x, y, p
 	option := ""
+	isIO := false
 	switch a {
 	case 0x02:
 		option = "Select input device"
@@ -39,9 +43,40 @@ func execOSBYTE(env *environment) {
 
 	case 0x80:
 		option = "Read ADC channel"
-		if x == 0xff {
+		/*
+			Entry parameters: X determines action and buffer or channel
+			On exit, for input buffers X contains the number of characters in the buffer
+			and for output buffers the number of spaces remaining.
+		*/
+		if x == 0xff { // Keyboard buffer
 			newX = 0
 		} else {
+			env.notImplemented("OSBYTE80 supported only for X=ff")
+		}
+
+	case 0x81:
+		/*
+			Entry parameters: X and Y specify time limit in centiseconds
+			On exit,
+				If a character is detected, X=ASCII value of key pressed, Y=0 and C=0.
+				If a character is not detected within timeout then Y=&FF and C=1 If Escape
+				is pressed then Y=&1B (27) and C=1.
+			If called with Y=&FF and a negative INKEY value in X (see appendix C) this call
+			performs a keyboard scan. On exit, X and Y contain &FF if the key being scanned
+			is pressed.
+		*/
+		option = "Read key with time limit"
+		isIO = true
+		timeLimitMs := (uint16(x) + uint16(y)<<8) * 10
+
+		// TODO: read the keyboard, for now we just wait the time limit
+		time.Sleep(time.Duration(timeLimitMs) * time.Millisecond)
+
+		if y == 0xff { // Keyboard scan
+			newY = 0 // not pressed
+		} else { // get key
+			newY = 0xff
+			newP = newP | 1 // Set carry
 			env.notImplemented("OSBYTE80 supported only for X=ff")
 		}
 
@@ -98,10 +133,21 @@ func execOSBYTE(env *environment) {
 
 	default:
 		env.notImplemented(fmt.Sprintf("OSBYTE%02x", a))
+		/*
+			If the unrecognised OSBYTE is not claimed by a
+			paged ROM then a ‘Bad command’ error will be issued (error
+			number 254).
+		*/
+		env.raiseError(254, "Bad command")
 	}
 
 	env.cpu.SetAXYP(newA, newX, newY, newP)
 	if option != "" {
-		env.log(fmt.Sprintf("OSBYTE%02x('%s',X=0x%02x,Y=0x%02x) => (X=0x%02x,Y=0x%02x)", a, option, x, y, newX, newY))
+		msg := fmt.Sprintf("OSBYTE%02x('%s',X=0x%02x,Y=0x%02x) => (X=0x%02x,Y=0x%02x)", a, option, x, y, newX, newY)
+		if isIO {
+			env.logIO(msg)
+		} else {
+			env.log(msg)
+		}
 	}
 }

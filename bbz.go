@@ -15,7 +15,9 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 	// Prepare environment
 	var env environment
 	env.in = bufio.NewScanner(os.Stdin)
-	env.referenceTime = time.Now() // Used by OSWORD01
+	env.referenceTime = time.Now()
+	env.timer = 0
+	env.lastTimerUpdate = time.Now()
 	env.mem = new(core6502.FlatMemory)
 	env.cpu = core6502.NewNMOS6502(env.mem)
 	env.cpu.SetTrace(cpuLog)
@@ -64,8 +66,8 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 				*/
 				pStacked := env.mem.Peek(0x100 + uint16(sp+1))
 				address := env.peekWord(0x100+uint16(sp+2)) - 1
-				faultNumber := env.mem.Peek(address + 1)
-				faultMessage := address
+				faultNumber := env.mem.Peek(address)
+				faultMessage := address + 1
 				faultString := env.getStringFromMem(faultMessage, 0)
 
 				env.mem.Poke(zpAccumulator, a)
@@ -74,7 +76,7 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 				brkv := env.peekWord(mosVectorBrk)
 				env.cpu.SetPC(brkv)
 
-				env.log(fmt.Sprintf("BREAK(ERR=%02x, '%s'", faultNumber, faultString))
+				env.log(fmt.Sprintf("BREAK(ERR=%02x, '%s')", faultNumber, faultString))
 
 			case 0xffda: // OSARGS
 				/*

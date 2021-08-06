@@ -31,10 +31,10 @@ func execOSCLI(env *environment) {
 		}
 	}
 
-	msg := "\nBad command\n"
+	msg := ""
 	switch command {
 	case "*HELP":
-		msg = fmt.Sprintf("\nbbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz\n")
+		msg = "\nbbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz\n"
 	case "*FX":
 		// Parse  *FX args
 		if len(params) == 0 || len(params) > 3 {
@@ -63,8 +63,13 @@ func execOSCLI(env *environment) {
 		env.cpu.SetAXYP(uint8(argA), uint8(argX), uint8(argY), p)
 		execOSBYTE(env)
 		msg = ""
+
+	default:
+		env.raiseError(1 /* todo */, "Bad command")
 	}
 
-	fmt.Print(msg)
-	env.log(fmt.Sprintf("OSCLI('%s %s)", command, strings.Join(params, " ")))
+	if msg != "" {
+		fmt.Print(msg)
+	}
+	env.log(fmt.Sprintf("OSCLI('%s %s')", command, strings.Join(params, " ")))
 }

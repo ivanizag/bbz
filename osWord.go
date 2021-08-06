@@ -34,7 +34,7 @@ func execOSWORD(env *environment) {
 		maxLength := env.mem.Peek(xy + 2)
 		minChar := env.mem.Peek(xy + 3)
 		maxChar := env.mem.Peek(xy + 4)
-		env.putStringInMem(buffer, line+"\r", maxLength)
+		env.putStringInMem(buffer, line, '\r', maxLength-1)
 		pOut := p &^ 1 // Clear carry
 		env.cpu.SetAXYP(1, x, uint8(len(line)), pOut)
 		env.vdu.mode7Reset()
@@ -51,14 +51,10 @@ func execOSWORD(env *environment) {
 		*/
 		duration := time.Since(env.referenceTime)
 		ticks := duration.Milliseconds() / 10
-		ticksLog := ticks & 0xff_ffff_ffff // 5 bytes
 		buffer := env.peekWord(xy)
-		for i := uint16(0); i < 5; i++ {
-			env.mem.Poke(buffer+i, uint8(ticks&0xff))
-			ticks >>= 8
-		}
+		env.poke5bytes(buffer, uint64(ticks))
 
-		env.log(fmt.Sprintf("OSWORD01('read system clock',BUF=0x%04x)=%v", buffer, ticksLog))
+		env.log(fmt.Sprintf("OSWORD01('read system clock',BUF=0x%04x)=%v", buffer, ticks&0xff_ffff_ffff))
 
 	case 0x02: // Write system clock
 		/*
@@ -66,16 +62,37 @@ func execOSWORD(env *environment) {
 			in memory at the address contained in the X and Y registers.
 		*/
 		buffer := env.peekWord(xy)
-		ticks := uint64(0)
-		for i := uint16(0); i < 5; i++ {
-			ticks <<= 8
-			ticks += uint64(env.mem.Peek(buffer + i))
-		}
+		ticks := env.peek5bytes(buffer)
 		duration := time.Duration(ticks * 100 * 1000)
 		env.referenceTime = time.Now()
 		env.referenceTime.Add(duration * -1)
 
 		env.log(fmt.Sprintf("OSWORD02('write system clock',TICKS=%v)", ticks))
+
+	case 0x03: // Read Interval timer
+		/*
+			In addition to the clock there is an interval timer which is incremented every
+			hundredth of a second. The interval is stored in five bytes pointed to by X and Y.
+		*/
+		duration := time.Since(env.lastTimerUpdate)
+		timer := env.timer + uint64(duration.Milliseconds()/10)
+		buffer := env.peekWord(xy)
+		env.poke5bytes(buffer, uint64(timer))
+
+		env.log(fmt.Sprintf("OSWORD03('read interval timer',BUF=0x%04x)=%v", buffer, timer&0xff_ffff_ffff))
+
+	case 0x04: // Write interval timer
+		/*
+			On entry X and Y point to five locations which contain the new value to which the
+			clock is to be set. The interval timer increments and may cause an event when it
+			reaches zero. Thus setting the timer to &FFFFFFFFFE would cause an event
+			after two hundredths of a second.
+		*/
+		buffer := env.peekWord(xy)
+		env.timer = env.peek5bytes(buffer)
+		env.lastTimerUpdate = time.Now()
+
+		env.log(fmt.Sprintf("OSWORD04('write interval timer',TIMER=%v)", env.timer))
 
 	case 0x05: // Read I/O processor memory
 		/*
