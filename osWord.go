@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"time"
 )
 
@@ -27,7 +26,6 @@ func execOSWORD(env *environment) {
 			return
 		}
 		line := env.in.Text()
-		line = strings.ToUpper(line)
 
 		// TODO: check max size
 		buffer := env.peekWord(xy)

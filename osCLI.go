@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os/exec"
 	"strconv"
 	"strings"
 )
@@ -35,8 +36,22 @@ func execOSCLI(env *environment) {
 	switch command {
 	case "*HELP":
 		msg = "\nbbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz\n"
+
 	case "*QUIT":
 		env.stop = true
+
+	case "*HOST":
+		if len(params) == 0 {
+			env.raiseError(1, "Command missing for *HOST")
+		} else {
+			cmd := exec.Command(params[0], params[1:]...)
+			stdout, err := cmd.Output()
+			if err != nil {
+				env.raiseError(1, err.Error())
+			}
+			fmt.Println(string(stdout))
+		}
+
 	case "*FX":
 		// Parse  *FX args
 		if len(params) == 0 || len(params) > 3 {
