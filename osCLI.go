@@ -35,6 +35,8 @@ func execOSCLI(env *environment) {
 	switch command {
 	case "*HELP":
 		msg = "\nbbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz\n"
+	case "*QUIT":
+		env.stop = true
 	case "*FX":
 		// Parse  *FX args
 		if len(params) == 0 || len(params) > 3 {

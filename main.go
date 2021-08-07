@@ -6,7 +6,8 @@ import (
 )
 
 func main() {
-	fmt.Printf("bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz\n\n")
+	fmt.Printf("bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz\n")
+	fmt.Printf("(tip: uppercase is usually needed)\n\n")
 
 	traceCPU := flag.Bool(
 		"c",

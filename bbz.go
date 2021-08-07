@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 	"unicode"
 
@@ -122,7 +121,7 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 				line := env.in.Text()
 				// TODO: capture keystrokes. We will just get the first chat of the line
 				// and ignore the rest.
-				ch := strings.ToUpper(line)[0]
+				ch := line[0]
 				pOut := p &^ 1 // Clear carry
 				env.cpu.SetAXYP(ch, x, y, pOut)
 
