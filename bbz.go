@@ -89,7 +89,7 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 					switch a {
 					case 0:
 						// Returns the current filing system in A
-						filingSystem := 4 // Disc filling system
+						filingSystem := 9 // Host filing system
 						env.log(fmt.Sprintf("OSARGS('Get filing system',A=%02x,Y=%02x)= %v", a, y, filingSystem))
 					case 0xff:
 						/*
