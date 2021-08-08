@@ -103,6 +103,46 @@ func execOSWORD(env *environment) {
 		env.log(fmt.Sprintf("OSWORD05('Read I/O processor memory',ADDRESS=0x%08x)=0x%02x",
 			address, value))
 
+	case 0x06: // Write i/O processor memory
+		/*
+			This call permits I/O processor memory to be written across the Tube. A 32 bit
+			address is contained in the parameter block addressed by the X and Y registers
+			and the byte to be written should be placed in XY+4.
+		*/
+		address := uint32(env.peekWord(xy)) +
+			uint32(env.peekWord(xy+2))<<16
+		value := env.mem.Peek(xy + 4)
+		env.mem.Poke(uint16(address), value)
+
+		env.log(fmt.Sprintf("OSWORD06('Write I/O processor memory',ADDRESS=0x%08x,VAL=0x%02x)",
+			address, value))
+
+	case 0x07: // Sound command
+		/*
+			This routine takes an 8 byte parameter block addressed by the X and Y registers. The 8
+			bytes of the parameter block may be considered as the four parameters used for the SOUND
+			command in BASIC.
+		*/
+		channel := env.peekWord(xy)
+		amplitude := int8(env.peekWord(xy + 2))
+		pitch := env.peekWord(xy + 4)
+		duration := env.peekWord(xy + 6)
+		// TODO: play sound
+
+		env.log(fmt.Sprintf("OSWORD07('Sound command',CHAN=%v,AMPL=%v,PITCH=%v,DUR=%v)",
+			channel, amplitude, pitch, duration))
+
+	case 0x08: // Define an envelope
+		/*
+			The ENVELOPE parameter block should contain 14 bytes of data which correspond to the 14
+			parameters described in the ENVELOPE command. This call should be entered with the
+			parameter block address contained in the X and Y registers.
+		*/
+		number := env.mem.Peek(xy)
+		// TODO: define envelope
+
+		env.log(fmt.Sprintf("OSWORD08('Define envelope',NUMBER=%v)", number))
+
 	default:
 		env.notImplemented(fmt.Sprintf("OSWORD%02x", a))
 	}
