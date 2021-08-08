@@ -26,6 +26,11 @@ References:
 - Can run BBC BASIC and most of the language ROMs.
 - Saves and loads files from the host filesystem.
 - Does some of the mode 7 text coloring using ANSI escape codes on the terminal. Try `VDU 65,129,66,130,67,132,68,135,69,13,10` on BBC BASIC.
+- OSCLI comands suported:
+  - *QUIT: exit
+  - *HELP
+  - *FX
+  - *HOST cmd: execute a command on the host OS. Example: `*HOST ls -la`
 
 ## Usage 
 

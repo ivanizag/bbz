@@ -20,8 +20,16 @@ func execOSCLI(env *environment) {
 	xy := uint16(x) + uint16(y)<<8
 	line := env.getStringFromMem(xy, 0x0d)
 	fields := strings.Fields(line)
-	command := fields[0]
+	command := strings.ToUpper(fields[0])
+	// The command-line interpreter does not distinguish between upper and lower case characters in the command name
+	command = strings.ToUpper(command)
 	params := fields[1:]
+
+	if command == "*" && len(params) > 0 {
+		// There are spaces between the * and the command
+		command = "*" + strings.ToUpper(params[0])
+		params = params[1:]
+	}
 
 	if strings.HasPrefix(command, "*FX") {
 		// *FX123 should be treated as *FX 123
@@ -32,10 +40,38 @@ func execOSCLI(env *environment) {
 		}
 	}
 
+	if strings.HasPrefix(command, "*|") {
+		// *|123 should be treated as *| 123
+		fxNumber := command[3:]
+		if len(fxNumber) != 0 {
+			command = "*|"
+			params = append([]string{fxNumber}, params...)
+		}
+	}
+
 	msg := ""
 	switch command {
+
+	case "*|":
+		/*
+			An operating system command-line with a ‘|’, string escape
+			character, as its first non-blank character will be ignored by the
+			operating system. This could be used to put comment lines into
+			a series of operating system commands placed in an EXEC file
+			for example.
+		*/
+		// do nothing
+
+	case "*H.":
+		fallthrough
 	case "*HELP":
-		msg = "\nbbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz\n"
+		msg = "bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz"
+
+	case "*.":
+		fallthrough
+	case "*CAT":
+		// TODO
+		msg = "<<directory placeholder>>"
 
 	case "*QUIT":
 		env.stop = true
@@ -79,14 +115,13 @@ func execOSCLI(env *environment) {
 		// Send to OSBYTE
 		env.cpu.SetAXYP(uint8(argA), uint8(argX), uint8(argY), p)
 		execOSBYTE(env)
-		msg = ""
 
 	default:
 		env.raiseError(1 /* todo */, "Bad command")
 	}
 
 	if msg != "" {
-		fmt.Print(msg)
+		fmt.Printf("\n%s\n", msg)
 	}
 	env.log(fmt.Sprintf("OSCLI('%s %s')", command, strings.Join(params, " ")))
 }
