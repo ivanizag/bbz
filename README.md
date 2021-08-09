@@ -38,7 +38,7 @@ References:
 bbz [flags] [filename]
 ```
 
-This first arguments is the filename of the ROM to run. With no arguments it
+`filename` is the filename of the ROM to run. With no arguments it
 runs the BBC Basic ROM in `BASIC.ROM`.
 
 Avaliable flags (to put before the ROM filename if present):
@@ -72,9 +72,10 @@ HEY
 >X
 
 Mistake
->^Csignal: interrupt
-$ ls -l TEST
+>*HOST ls -l TEST
 -rw-r--r-- 1 casa casa 14 jul 30 20:04 TEST
+
+>^Csignal: interrupt
 ```
 
 Log of the MOS calls (excluding the most verbose output API calls):

@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"time"
 	"unicode"
@@ -77,33 +78,57 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 
 				env.log(fmt.Sprintf("BREAK(ERR=%02x, '%s')", faultNumber, faultString))
 
-			case 0xffda: // OSARGS
+			case 0xffce: // OSFIND
+				execOSFIND(&env)
+
+			case 0xffd4: // OSBPUT
 				/*
-					Call address &FFDA Indirected through &214
-					This routine reads or writes an open file's attributes.
-					On entry, X points to a four byte zero page control block.
-					Y contains the file handle as provided by OSFIND, or zero.
-					The accumulator contains a number specifying the action required.
+					Write a single byte to an open file
+					On entry, Y contains the file handle, as provided by OSFIND. A contains the
+					byte to be written. The byte is placed at the point in the file designated by
+					the sequential pointer.
 				*/
-				if y == 0 {
-					switch a {
-					case 0:
-						// Returns the current filing system in A
-						filingSystem := 9 // Host filing system
-						env.log(fmt.Sprintf("OSARGS('Get filing system',A=%02x,Y=%02x)= %v", a, y, filingSystem))
-					case 0xff:
-						/*
-							Update all files onto the media, ie ensure that the latest copy
-							of the memory buffer is saved.
-							We will do nothing.
-						*/
-						env.log("OSARGS('Update all files onto the media')")
-					default:
-						env.notImplemented(fmt.Sprintf("OSARGS(A=%02x,Y=%02x)", a, y))
+				file := env.getFile(y)
+				if file != nil {
+					buf := []uint8{a}
+					_, err := file.Write(buf)
+					if err != nil {
+						env.raiseError(errorTodo, err.Error())
 					}
-				} else {
-					env.notImplemented(fmt.Sprintf("OSARGS(A=%02x,Y=%02x)", a, y))
 				}
+				env.log(fmt.Sprintf("OSBPUT(FILE=%v,VAL=0x%02x)", y, a))
+
+			case 0xffd7: // OSBGET
+				/*
+					Get one byte from an open file
+					This routine reads a single byte from a file.
+					On entry, Y contains the file handle, as provided by OSFIND. The byte is
+					obtained from the point in the file designated by the sequential pointer.
+					On exit, A contains the byte read. C is set if the end of the file has been
+					reached, and indicates that the byte obtained is invalid.
+				*/
+				value := uint8(0)
+				eof := false
+				file := env.getFile(y)
+				if file != nil {
+					buf := make([]uint8, 1)
+					_, err := file.Read(buf)
+					if err == io.EOF {
+						// EOF, set C
+						eof = true
+						env.cpu.SetAXYP(a, x, y, p|1)
+					} else if err != nil {
+						env.raiseError(errorTodo, err.Error())
+					} else {
+						// Valid, clear C
+						value = buf[0]
+						env.cpu.SetAXYP(buf[0], x, y, p&0xfe)
+					}
+				}
+				env.log(fmt.Sprintf("OSBGET(FILE=%v)=0x%02x,EOF=%v", y, value, eof))
+
+			case 0xffda: // OSARGSexecOSARGS
+				execOSARGS(&env)
 
 			case 0xffdd: // OSFILE: Load or save a complete file. BPUG page 446
 				execOSFILE(&env)

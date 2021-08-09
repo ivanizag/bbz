@@ -1,0 +1,2 @@
+open file 4, comalfile, append
+print eof 4

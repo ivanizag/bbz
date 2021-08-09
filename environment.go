@@ -27,6 +27,9 @@ const (
 	breakEntryPoint uint16 = 0xffb0 // Invented as there is not an address defined
 	vectorReset     uint16 = 0xfffc
 	vectorBreak     uint16 = 0xfffe
+
+	maxFiles        = 5
+	errorTodo uint8 = 123 // TODO: find proper error number
 )
 
 type environment struct {
@@ -41,6 +44,9 @@ type environment struct {
 	// timer, used by OSWORD03 and 04
 	timer           uint64 // Only 40 bits are used
 	lastTimerUpdate time.Time
+
+	// files
+	file [maxFiles]*os.File
 
 	// behaviour
 	stop bool
@@ -120,6 +126,23 @@ func (env *environment) loadMos() {
 
 }
 
+///////////////////////////
+// File handling
+///////////////////////////
+func (env *environment) getFile(handle uint8) *os.File {
+	i := handle - 1
+	if i < maxFiles && env.file[i] != nil {
+		return env.file[i]
+	}
+
+	env.raiseError(222, "Channel")
+	return nil
+}
+
+///////////////////////////
+// Errors and logs
+///////////////////////////
+
 func (env *environment) raiseError(code uint8, msg string) {
 	/*
 		The BBC microcomputer adopts a standard pattern of bytes
@@ -159,6 +182,10 @@ func (env *environment) notImplemented(feature string) {
 	}
 	env.log(msg)
 }
+
+///////////////////////////
+// Memory Access
+///////////////////////////
 
 func (env *environment) putStringInMem(address uint16, s string, terminator uint8, maxLength uint8) {
 	// maxLength not including terminator
@@ -208,18 +235,18 @@ func (env *environment) pokeWord(address uint16, value uint16) {
 	env.mem.Poke(address+1, uint8(value>>8))
 }
 
-func (env *environment) peek5bytes(address uint16) uint64 {
+func (env *environment) peeknbytes(address uint16, n int) uint64 {
 	ticks := uint64(0)
-	for i := uint16(0); i < 5; i++ {
+	for i := n - 1; i >= 0; i-- {
 		ticks <<= 8
-		ticks += uint64(env.mem.Peek(address + i))
+		ticks += uint64(env.mem.Peek(address + uint16(i)))
 	}
 	return ticks
 }
 
-func (env *environment) poke5bytes(address uint16, value uint64) {
-	for i := uint16(0); i < 5; i++ {
-		env.mem.Poke(address+i, uint8(value&0xff))
+func (env *environment) pokenbytes(address uint16, n int, value uint64) {
+	for i := 0; i < n; i++ {
+		env.mem.Poke(address+uint16(i), uint8(value&0xff))
 		value >>= 8
 	}
 }

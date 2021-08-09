@@ -49,7 +49,7 @@ func execOSWORD(env *environment) {
 		*/
 		duration := time.Since(env.referenceTime)
 		ticks := duration.Milliseconds() / 10
-		env.poke5bytes(xy, uint64(ticks))
+		env.pokenbytes(xy, 5, uint64(ticks))
 
 		env.log(fmt.Sprintf("OSWORD01('read system clock',BUF=0x%04x)=%v", xy, ticks&0xff_ffff_ffff))
 
@@ -58,10 +58,10 @@ func execOSWORD(env *environment) {
 			This routine may be used to set the system clock to a five byte value contained
 			in memory at the address contained in the X and Y registers.
 		*/
-		ticks := env.peek5bytes(xy)
-		duration := time.Duration(ticks * 100 * 1000)
+		ticks := env.peeknbytes(xy, 5)
+		duration := time.Duration(ticks * 10 * uint64(time.Millisecond))
 		env.referenceTime = time.Now()
-		env.referenceTime.Add(duration * -1)
+		env.referenceTime = env.referenceTime.Add(duration * -1)
 
 		env.log(fmt.Sprintf("OSWORD02('write system clock',TICKS=%v)", ticks))
 
@@ -72,7 +72,7 @@ func execOSWORD(env *environment) {
 		*/
 		duration := time.Since(env.lastTimerUpdate)
 		timer := env.timer + uint64(duration.Milliseconds()/10)
-		env.poke5bytes(xy, uint64(timer))
+		env.pokenbytes(xy, 5, uint64(timer))
 
 		env.log(fmt.Sprintf("OSWORD03('read interval timer',BUF=0x%04x)=%v", xy, timer&0xff_ffff_ffff))
 
@@ -83,7 +83,7 @@ func execOSWORD(env *environment) {
 			reaches zero. Thus setting the timer to &FFFFFFFFFE would cause an event
 			after two hundredths of a second.
 		*/
-		env.timer = env.peek5bytes(xy)
+		env.timer = env.peeknbytes(xy, 5)
 		env.lastTimerUpdate = time.Now()
 
 		env.log(fmt.Sprintf("OSWORD04('write interval timer',TIMER=%v)", env.timer))

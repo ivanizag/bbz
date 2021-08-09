@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"time"
 )
 
@@ -40,6 +41,33 @@ func execOSBYTE(env *environment) {
 			preserved, Y and C are undefined
 		*/
 		newX = 0
+
+	case 0x7f:
+		option = "Check for end-of-file on an opened file"
+		/*
+			Entry parameters: X contains file handle
+			On exit,
+			  X<>0 If end-of-file has been reached
+			  X=0 If end-of-file has not been reached
+		*/
+		file := env.getFile(x)
+		if file != nil {
+			pos, err := file.Seek(0, io.SeekCurrent)
+			if err != nil {
+				env.raiseError(errorTodo, err.Error())
+			} else {
+				info, err := file.Stat()
+				if err != nil {
+					env.raiseError(errorTodo, err.Error())
+				} else {
+					if pos >= info.Size() {
+						newX = 1 // EOF
+					} else {
+						newX = 0 // Not EOF
+					}
+				}
+			}
+		}
 
 	case 0x80:
 		option = "Read ADC channel"

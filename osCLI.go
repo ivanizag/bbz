@@ -78,12 +78,12 @@ func execOSCLI(env *environment) {
 
 	case "*HOST":
 		if len(params) == 0 {
-			env.raiseError(1, "Command missing for *HOST")
+			env.raiseError(errorTodo, "Command missing for *HOST")
 		} else {
 			cmd := exec.Command(params[0], params[1:]...)
 			stdout, err := cmd.Output()
 			if err != nil {
-				env.raiseError(1, err.Error())
+				env.raiseError(errorTodo, err.Error())
 			}
 			fmt.Println(string(stdout))
 		}
@@ -117,7 +117,7 @@ func execOSCLI(env *environment) {
 		execOSBYTE(env)
 
 	default:
-		env.raiseError(1 /* todo */, "Bad command")
+		env.raiseError(254, "Bad command")
 	}
 
 	if msg != "" {
