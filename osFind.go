@@ -43,11 +43,13 @@ func execOSFIND(env *environment) {
 		if y == 0 {
 			// Close all files
 			for i := 0; i < maxFiles; i++ {
-				err := env.file[i].Close()
-				if err != nil {
-					env.raiseError(errorTodo, err.Error())
+				if env.file[i] != nil {
+					err := env.file[i].Close()
+					if err != nil {
+						env.raiseError(errorTodo, err.Error())
+					}
+					env.file[i] = nil
 				}
-				env.file[i] = nil
 			}
 			env.log("OSFIND('Close all files')")
 		} else {

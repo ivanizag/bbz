@@ -32,6 +32,14 @@ func execOSBYTE(env *environment) {
 		*/
 		// We do nothing
 
+	case 0x76:
+		option = "Reflect keyboard status in keyboard LEDs"
+		/*
+			This call reflects the keyboard status in the state of the keyboard LEDs, and is
+			normally used after the status has been changed by OSBYTE &CA
+		*/
+		// We do nothing
+
 	case 0x7e:
 		option = "Ack detection of an ESC condition"
 		/*
@@ -145,6 +153,21 @@ func execOSBYTE(env *environment) {
 			On entry X contains the option number and Y contains the particular selected option
 		*/
 		// TODO
+
+	case 0xca:
+		option = "Read/write keyboard status byte"
+		/*
+			The old value is returned in X. The contents of the next location are returned in Y.
+				bit 3: 1 if SHIFT is pressed.
+				bit 4: 0 if CAPS LOCK is engaged.
+				bit 5: 0 if SHIFT LOCK is engaged.
+				bit 6: 1 if CTRL is pressed.
+				bit 7: 1 SHIFT enabled, if a LOCK key is engaged then SHIFT reverses the LOCK.
+
+			We return 0 always
+		*/
+		newX = 0
+		newY = 0
 
 	case 0xda:
 		option = "R/W number of items in VDU"

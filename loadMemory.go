@@ -103,7 +103,7 @@ const (
 	vectorBreak uint16 = 0xfffe
 
 	maxFiles        = 5
-	errorTodo uint8 = 123 // TODO: find proper error number
+	errorTodo uint8 = 129 // TODO: find proper error number
 )
 
 func loadRom(env *environment, filename string) {
