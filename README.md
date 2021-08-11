@@ -17,9 +17,10 @@ Apple //e Enhanced which provides an environment for Acorn BBC Microcomputer
 language ROMs to run."
 
 References:
-- BBC Microcomputer System User Guide: https://archive.org/details/BBCUG
+- [BBC Microcomputer System User Guide](https://archive.org/details/BBCUG)
 - The Advanced User Guide for the BBC Microcomputer
-- Applecorn source code: https://github.com/bobbimanners/Applecorn
+- [Applecorn source code](https://github.com/bobbimanners/Applecorn)
+- [The MOS Reassembly for the BBC Micro](https://tobylobster.github.io/mos/mos/index.html)
 
 ## Features
 - Some of the MOS entrypoints and VDU control codes are defined.

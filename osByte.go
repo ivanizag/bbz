@@ -129,16 +129,16 @@ func execOSBYTE(env *environment) {
 
 	case 0x84:
 		option = "Read top of user mem"
-		newX = uint8(langRomStart & 0xff)
-		newY = uint8(langRomStart >> 8)
+		newX = uint8(romStartAddress & 0xff)
+		newY = uint8(romStartAddress >> 8)
 
 	case 0x85:
 		option = "Read top of user mem for mode"
-		newX = uint8(langRomStart & 0xff)
-		newY = uint8(langRomStart >> 8)
+		newX = uint8(romStartAddress & 0xff)
+		newY = uint8(romStartAddress >> 8)
 
 	case 0x8b:
-		option = "xx"
+		option = "Set filing system options"
 		/*
 			This call is directly equivalent to *OPT and it controls the computer’s response to
 			errors during file operations such as LOAD and SAVE.

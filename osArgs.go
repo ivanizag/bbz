@@ -6,7 +6,7 @@ import (
 )
 
 func execOSARGS(env *environment) {
-	a, x, y, _ := env.cpu.GetAXYP()
+	a, x, y, p := env.cpu.GetAXYP()
 
 	/*
 		Call address &FFDA Indirected through &214
@@ -21,8 +21,10 @@ func execOSARGS(env *environment) {
 		switch a {
 		case 0: // Returns the current filing system in A
 
-			filingSystem := 9 // Host filing system
-			env.log(fmt.Sprintf("OSARGS('Get filing system',A=%02x,Y=%02x)= %v", a, y, filingSystem))
+			filingSystem := uint8(0x69) //uint8(9) // Host filing system
+			env.cpu.SetAXYP(filingSystem, x, y, p)
+
+			env.log(fmt.Sprintf("OSARGS('Get filing system',A=%02x,Y=%02x) => %v", a, y, filingSystem))
 
 		case 0xff: // Update all files onto the media
 			// Do nothing.
@@ -37,7 +39,7 @@ func execOSARGS(env *environment) {
 
 	file := env.getFile(y)
 	if file == nil {
-		env.log(fmt.Sprintf("OSARGS(A=%02x,FILE=%v)='bad handler'", a, y))
+		env.log(fmt.Sprintf("OSARGS(A=%02x,FILE=%v) => 'bad handler'", a, y))
 	}
 
 	switch a {
@@ -48,7 +50,7 @@ func execOSARGS(env *environment) {
 		} else {
 			env.pokenbytes(uint16(x), 4, uint64(pos))
 		}
-		env.log(fmt.Sprintf("OSARGS('Get PTR#',FILE=%v)=%v", y, pos))
+		env.log(fmt.Sprintf("OSARGS('Get PTR#',FILE=%v) => %v", y, pos))
 
 	case 1: // Write sequential pointer of file
 		pos := int64(env.peeknbytes(uint16(x), 4))

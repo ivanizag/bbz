@@ -48,19 +48,6 @@ func newVdu() *vdu {
 	return &v
 }
 
-func (v *vdu) writeAscii(i uint8) {
-	if i == 0x0d {
-		v.writeNewline()
-	} else {
-		v.write(i)
-	}
-}
-
-func (v *vdu) writeNewline() {
-	v.write('\r')
-	v.write('\n')
-}
-
 func (v *vdu) clearQueue() {
 	v.queue = nil
 }
