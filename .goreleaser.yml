@@ -26,6 +26,7 @@ archives:
       - LICENSE
       - BASIC.ROM
       - ROMs/*
+      - firmware
 checksum:
   name_template: 'checksums.txt'
 snapshot:

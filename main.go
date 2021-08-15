@@ -33,5 +33,5 @@ func main() {
 		romFile = "BASIC.ROM"
 	}
 
-	RunMOSEnvironment(romFile, *traceCPU, (*traceMOS) || (*traceMOSFull), *traceMOSFull, *panicOnErr)
+	RunMOSEnvironment(romFile, "firmware", *traceCPU, (*traceMOS) || (*traceMOSFull), *traceMOSFull, *panicOnErr)
 }

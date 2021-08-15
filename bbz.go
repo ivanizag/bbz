@@ -11,7 +11,7 @@ import (
 	"github.com/ivanizag/izapple2/core6502"
 )
 
-func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bool, panicOnErr bool) {
+func RunMOSEnvironment(romFilename string, firmFilename string, cpuLog bool, apiLog bool, apiLogIO bool, panicOnErr bool) {
 	// Prepare environment
 	var env environment
 	env.in = bufio.NewScanner(os.Stdin)
@@ -23,8 +23,8 @@ func RunMOSEnvironment(romFilename string, cpuLog bool, apiLog bool, apiLogIO bo
 	env.cpu.SetTrace(cpuLog)
 	env.vdu = newVdu()
 
+	loadMosFromFile(&env, firmFilename)
 	loadRom(&env, romFilename)
-	loadMos(&env)
 
 	env.apiLog = apiLog
 	env.apiLogIO = apiLogIO

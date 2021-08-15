@@ -62,13 +62,27 @@ func (env *environment) raiseError(code uint8, msg string) {
 		TODO: set proper error codes
 			http://chrisacorns.computinghistory.org.uk/docs/SJR/SJR_HDFSSysMgrManual.pdf
 	*/
-	env.mem.Poke(errorArea, 0x00 /* BRK opcode */)
-	env.mem.Poke(errorArea+1, code)
-	env.putStringInMem(errorArea+2, msg, 0, uint8(errorMessageMaxLength))
-
+	env.storeError(errorArea, code, msg, errorMessageMaxLength)
 	env.cpu.SetPC(errorArea)
 
 	env.log(fmt.Sprintf("RAISE(ERR=%02x, '%s')", code, msg))
+}
+
+func (env *environment) storeError(address uint16, code uint8, msg string, maxMsgLen int) {
+	/*
+		The BBC microcomputer adopts a standard pattern of bytes
+		following a BRK instruction, this is:
+		A single byte error number
+		An error message
+		A zero byte to terminate the message
+
+		TODO: set proper error codes
+			http://chrisacorns.computinghistory.org.uk/docs/SJR/SJR_HDFSSysMgrManual.pdf
+	*/
+	env.mem.Poke(address, 0x00 /* BRK opcode */)
+	env.mem.Poke(address+1, code)
+	env.putStringInMem(address+2, msg, 0, uint8(maxMsgLen))
+
 }
 
 func (env *environment) log(msg string) {

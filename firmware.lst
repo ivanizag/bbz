@@ -1,0 +1,128 @@
+ca65 V2.18 - Ubuntu 2.18-1
+Main file   : firmware.s
+Current file: firmware.s
+
+000000r 1               ; build:
+000000r 1               ;    cl65 -l firmware.lst firmware.s --config firmware.cfg
+000000r 1               
+000000r 1               
+000000r 1               ; constants
+000000r 1                               .export ENTRY := $8000
+000000r 1               
+000000r 1               
+000000r 1               ; boot code
+000000r 1                               .org $0000
+000000  1               BOOT:
+000000  1  A9 01                        LDA #$1
+000002  1  4C 00 80                     JMP ENTRY
+000005  1               
+000005  1               
+000005  1               ; init ram vectors
+000005  1  xx xx xx xx                  .res $0200 - *
+000009  1  xx xx xx xx  
+00000D  1  xx xx xx xx  
+000200  1                               .org $0200
+000200  1               VECTORS_START:
+000200  1  11 FB        USERV:          .addr epUSER
+000202  1  10 FB        BRKV:           .addr epBRK
+000204  1  0F FB        IRQ1V:          .addr epIRQ1
+000206  1  0E FB        IRQ2V:          .addr epIRQ2
+000208  1  0D FB        CLIV:           .addr epCLI
+00020A  1  0C FB        BYTEV:          .addr epBYTE
+00020C  1  0B FB        WORDV:          .addr epWORD
+00020E  1  0A FB        WRCHV:          .addr epWRCH
+000210  1  09 FB        RDCHV:          .addr epRDCH
+000212  1  08 FB        FILEV:          .addr epFILE
+000214  1  07 FB        ARGSV:          .addr epARGS
+000216  1  06 FB        BGETV:          .addr epBGET
+000218  1  05 FB        BPUTV:          .addr epBPUT
+00021A  1  04 FB        GBPBV:          .addr epGBPB
+00021C  1  03 FB        FINDV:          .addr epFIND
+00021E  1  02 FB        FSCV:           .addr epFSC
+000220  1  01 FB        EVNTV:          .addr epEVNT
+000222  1  00 FB        UPTV:           .addr epUPT
+000224  1  17 FB        NETV:           .addr epNET
+000226  1  18 FB        VDUV:           .addr epVDU
+000228  1  19 FB        KEYV:           .addr epKEY
+00022A  1  1A FB        INSV:           .addr epINS
+00022C  1  1B FB        REMV:           .addr epREM
+00022E  1  1C FB        CNPV:           .addr epCNP
+000230  1  1D FB        IND1V:          .addr epIND1
+000232  1  1E FB        IND2V:          .addr epIND2
+000234  1  1F FB        IND3V:          .addr epIND3
+000236  1               
+000236  1               
+000236  1               ; bbz host entry points
+000236  1  xx xx xx xx                  .res $fb00 - *
+00023A  1  xx xx xx xx  
+00023E  1  xx xx xx xx  
+00FB00  1                               .org $fb00
+00FB00  1  60           epUPT:          rts       ; 0xfb00
+00FB01  1  60           epEVNT:         rts       ; 0xfb01
+00FB02  1  60           epFSC:          rts       ; 0xfb02
+00FB03  1  60           epFIND:         rts       ; 0xfb03
+00FB04  1  60           epGBPB:         rts       ; 0xfb04
+00FB05  1  60           epBPUT:         rts       ; 0xfb05
+00FB06  1  60           epBGET:         rts       ; 0xfb06
+00FB07  1  60           epARGS:         rts       ; 0xfb07
+00FB08  1  60           epFILE:         rts       ; 0xfb08
+00FB09  1  60           epRDCH:         rts       ; 0xfb09
+00FB0A  1  60           epWRCH:         rts       ; 0xfb0a
+00FB0B  1  60           epWORD:         rts       ; 0xfb0b
+00FB0C  1  60           epBYTE:         rts       ; 0xfb0c
+00FB0D  1  60           epCLI:          rts       ; 0xfb0d
+00FB0E  1  60           epIRQ2:         rts       ; 0xfb0e
+00FB0F  1  60           epIRQ1:         rts       ; 0xfb0f
+00FB10  1  60           epBRK:          rts       ; 0xfb10
+00FB11  1  60           epUSER:         rts       ; 0xfb11
+00FB12  1  60           epSYSBRK:       rts       ; 0xfb12
+00FB13  1  60           epRDRM:         rts       ; 0xfb13
+00FB14  1  60           epVDUCH:        rts       ; 0xfb14
+00FB15  1  60           epGSINIT:       rts       ; 0xfb16
+00FB16  1  60           epGSREAD:       rts       ; 0xfb17
+00FB17  1  60           epNET:          rts       ; 0xfb18
+00FB18  1  60           epVDU:          rts       ; 0xfb19
+00FB19  1  60           epKEY:          rts       ; 0xfb1a
+00FB1A  1  60           epINS:          rts       ; 0xfb1b
+00FB1B  1  60           epREM:          rts       ; 0xfb1c
+00FB1C  1  60           epCNP:          rts       ; 0xfb1d
+00FB1D  1  60           epIND1:         rts       ; 0xfb1e
+00FB1E  1  60           epIND2:         rts       ; 0xfb1f
+00FB1F  1  60           epIND3:         rts       ; 0xfb20
+00FB20  1               
+00FB20  1               
+00FB20  1               ; MOS function calls
+00FB20  1  xx xx xx xx                  .res $ffb9 - *
+00FB24  1  xx xx xx xx  
+00FB28  1  xx xx xx xx  
+00FFB9  1                               .org $ffb9
+00FFB9  1  4C 13 FB     OSRDRM:         jmp epRDRM              ; OSRDRM get a byte from sideways ROM
+00FFBC  1  4C 14 FB     VDUCHR:         jmp epVDUCH             ; VDUCHR VDU character output
+00FFBF  1  4C 01 FB     OSEVEN:         jmp epEVNT              ; OSEVEN generate an EVENT
+00FFC2  1  4C 15 FB     GSINIT:         jmp epGSINIT            ; GSINIT initialise OS string
+00FFC5  1  4C 16 FB     GSREAD:         jmp epGSREAD            ; GSREAD read character from input stream
+00FFC8  1  4C 09 FB     NVRDCH:         jmp epRDCH              ; NVRDCH non vectored OSRDCH
+00FFCB  1  4C 0A FB     NVWRCH:         jmp epWRCH              ; NVWRCH non vectored OSWRCH
+00FFCE  1  6C 1C 02     OSFIND:         jmp (FINDV)             ; OSFIND open or close a file
+00FFD1  1  6C 1A 02                     jmp (GBPBV)             ; OSGBPB transfer block to or from a file
+00FFD4  1  6C 18 02     OSBPUT:	        jmp (BPUTV)             ; OSBPUT save a byte to file
+00FFD7  1  6C 16 02     OSBGET:         jmp (BGETV)             ; OSBGET get a byte from file
+00FFDA  1  6C 14 02     OSARGS:         jmp (ARGSV)             ; OSARGS read or write file arguments
+00FFDD  1  6C 12 02     OSFILE:         jmp (FILEV)             ; OSFILE read or write a file
+00FFE0  1  6C 10 02     OSRDCH:         jmp (RDCHV)             ; OSRDCH get a byte from current input stream
+00FFE3  1  C9 0D        OSASCI:         cmp #$0d                ; OSASCI output a byte to VDU stream expanding
+00FFE5  1  D0 07                        bne OSWRCH              ; carriage returns (&0D) to LF/CR (&0A,&0D)
+00FFE7  1  A9 0A        OSNEWL:         lda #$0a                ; OSNEWL output a CR/LF to VDU stream
+00FFE9  1  20 EE FF                     jsr OSWRCH              ; Outputs A followed by CR to VDU stream
+00FFEC  1  A9 0D                        lda #$0d                ; OSWRCR output a CR to VDU stream
+00FFEE  1  6C 0E 02     OSWRCH:         jmp (WRCHV)             ; OSWRCH output a character to the VDU stream
+00FFF1  1  6C 0C 02     OSWORD:         jmp (WORDV)             ; OSWORD perform operation using parameter table
+00FFF4  1  6C 0A 02     OSBYTE:         jmp (BYTEV)             ; OSBYTE perform operation with single bytes
+00FFF7  1  6C 08 02     OSCLI:          jmp (CLIV)              ; OSCLI pass string to command line interpreter
+00FFFA  1               
+00FFFA  1               
+00FFFA  1               ; 6502 vectors
+00FFFA  1  00 00                        .addr $0000       ; NMI address
+00FFFC  1  00 80                        .addr ENTRY    ; RESET address
+00FFFE  1  12 FB                        .addr epSYSBRK      ; IRQ address
+00FFFE  1               

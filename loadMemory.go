@@ -3,20 +3,22 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 )
 
 /*
-Memory map:
-	0000-00ff: zero page
-	0100-01ff: stack
-	0200-02ff: mos vectors and other
+Memory map, pages:
+	00: zero page
+	01: stack
+	02: mos vectors and other
 	...
-	8000-bfff: loaded rom
+	80: loaded rom
 	...
-	fd00-fdff: brk error messages
-	fe00-feff: entrypoints trapped by the host
-	ff00-ffff: mos and 6502 entrypoints
+	fa: brk error messages
+	fb: entrypoints trapped by the host
+	fc: FRED
+	fd: JIM
+	fe: SHEILA
+	ff: mos and 6502 entrypoints
 
 */
 const (
@@ -52,50 +54,53 @@ const (
 	vectorIND2V uint16 = 0x0232 // Unused vector
 	vectorIND3V uint16 = 0x0234 // Unused vector
 
-	// ROM header
+	// ROM header https://tobylobster.github.io/mos/mos/S-s2.html#SP26
 	userMemBottom             uint16 = 0x0e00
 	romStartAddress           uint16 = 0x8000
+	romServiceEntry           uint16 = 0x8003
+	romTypeByte               uint16 = 0x8006
 	romCopyrightOffsetPointer uint16 = 0x8007
 	romTitleString            uint16 = 0x8009
 
-	// Scratch are for errors in page 0xfd
-	errorArea             uint16 = 0xfd00
+	// Scratch area for errors in page 0xfa
+	errorArea             uint16 = 0xfa00
 	errorMessageMaxLength int    = 100
 
-	// Entry points for host interception in page 0xfe
-	entryPoints uint16 = 0xfe00
-	epUPT       uint16 = 0xfe00
-	epEVNT      uint16 = 0xfe01
-	epFSC       uint16 = 0xfe02
-	epFIND      uint16 = 0xfe03
-	epGBPB      uint16 = 0xfe04
-	epBPUT      uint16 = 0xfe05
-	epBGET      uint16 = 0xfe06
-	epARGS      uint16 = 0xfe07
-	epFILE      uint16 = 0xfe08
-	epRDCH      uint16 = 0xfe09
-	epWRCH      uint16 = 0xfe0a
-	epWORD      uint16 = 0xfe0b
-	epBYTE      uint16 = 0xfe0c
-	epCLI       uint16 = 0xfe0d
-	epIRQ2      uint16 = 0xfe0e
-	epIRQ1      uint16 = 0xfe0f
-	epBRK       uint16 = 0xfe10
-	epUSER      uint16 = 0xfe11
-	epSYSBRK    uint16 = 0xfe12
-	epRDRM      uint16 = 0xfe13
-	epVDUCH     uint16 = 0xfe14
-	epGSINIT    uint16 = 0xfe16
-	epGSREAD    uint16 = 0xfe17
-	epNET       uint16 = 0xfe18
-	epVDU       uint16 = 0xfe19
-	epKEY       uint16 = 0xfe1a
-	epINS       uint16 = 0xfe1b
-	epREM       uint16 = 0xfe1c
-	epCNP       uint16 = 0xfe1d
-	epIND1      uint16 = 0xfe1e
-	epIND2      uint16 = 0xfe1f
-	epIND3      uint16 = 0xfe20
+	// Entry points for host interception in page 0xfb
+	entryPoints       uint16 = 0xfb00
+	epUPT             uint16 = 0xfb00
+	epEVNT            uint16 = 0xfb01
+	epFSC             uint16 = 0xfb02
+	epFIND            uint16 = 0xfb03
+	epGBPB            uint16 = 0xfb04
+	epBPUT            uint16 = 0xfb05
+	epBGET            uint16 = 0xfb06
+	epARGS            uint16 = 0xfb07
+	epFILE            uint16 = 0xfb08
+	epRDCH            uint16 = 0xfb09
+	epWRCH            uint16 = 0xfb0a
+	epWORD            uint16 = 0xfb0b
+	epBYTE            uint16 = 0xfb0c
+	epCLI             uint16 = 0xfb0d
+	epIRQ2            uint16 = 0xfb0e
+	epIRQ1            uint16 = 0xfb0f
+	epBRK             uint16 = 0xfb10
+	epUSER            uint16 = 0xfb11
+	epSYSBRK          uint16 = 0xfb12
+	epRDRM            uint16 = 0xfb13
+	epVDUCH           uint16 = 0xfb14
+	epGSINIT          uint16 = 0xfb16
+	epGSREAD          uint16 = 0xfb17
+	epNET             uint16 = 0xfb18
+	epVDU             uint16 = 0xfb19
+	epKEY             uint16 = 0xfb1a
+	epINS             uint16 = 0xfb1b
+	epREM             uint16 = 0xfb1c
+	epCNP             uint16 = 0xfb1d
+	epIND1            uint16 = 0xfb1e
+	epIND2            uint16 = 0xfb1f
+	epIND3            uint16 = 0xfb20
+	epEntryPointsLast uint16 = 0xfb20
 
 	// MOS entrypoints and 6502 vectors
 	mosVectors  uint16 = 0xff00
@@ -106,16 +111,23 @@ const (
 	errorTodo uint8 = 129 // TODO: find proper error number
 )
 
+func loadMosFromFile(env *environment, firmFilename string) {
+	data, err := ioutil.ReadFile(firmFilename)
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < len(data); i++ {
+		env.mem.Poke(uint16(i), data[i])
+	}
+}
+
 func loadRom(env *environment, filename string) {
-	file, err := os.Open(filename)
+	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
-	data, err := ioutil.ReadAll(file)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
+
 	for i := 0; i < len(data); i++ {
 		env.mem.Poke(romStartAddress+uint16(i), data[i])
 	}
@@ -134,114 +146,4 @@ func loadRom(env *environment, filename string) {
 		The MOS also automatically prints the ROM's title string (&8009) so that the user is acknowledged.
 	*/
 	fmt.Printf("%s - %s\n", language, copyrigt)
-}
-
-func loadMos(env *environment) {
-
-	// Setup the vectors in page 2 to the addresses on 0xffxx
-	env.pokeWord(0x0222, epUPT)
-	env.pokeWord(0x0220, epEVNT)
-	env.pokeWord(0x021E, epFSC)
-	env.pokeWord(0x021C, epFIND)
-	env.pokeWord(0x021A, epGBPB)
-	env.pokeWord(0x0218, epBPUT)
-	env.pokeWord(0x0216, epBGET)
-	env.pokeWord(0x0214, epARGS)
-	env.pokeWord(0x0212, epFILE)
-	env.pokeWord(0x0210, epRDCH)
-	env.pokeWord(0x020E, epWRCH)
-	env.pokeWord(0x020C, epWORD)
-	env.pokeWord(0x020A, epBYTE)
-	env.pokeWord(0x0208, epCLI)
-	env.pokeWord(0x0206, epIRQ2)
-	env.pokeWord(0x0204, epIRQ1)
-	env.pokeWord(0x0202, epBRK)
-	env.pokeWord(0x0200, epUSER)
-
-	env.pokeWord(vectorUSERV, epUSER)
-	env.pokeWord(vectorBRKV, epBRK)
-	env.pokeWord(vectorIRQ1V, epIRQ1)
-	env.pokeWord(vectorIRQ2V, epIRQ2)
-	env.pokeWord(vectorCLIV, epCLI)
-	env.pokeWord(vectorBYTEV, epBYTE)
-	env.pokeWord(vectorWORDV, epWORD)
-	env.pokeWord(vectorWRCHV, epWRCH)
-	env.pokeWord(vectorRDCHV, epRDCH)
-	env.pokeWord(vectorFILEV, epFILE)
-	env.pokeWord(vectorARGSV, epARGS)
-	env.pokeWord(vectorBGETV, epBGET)
-	env.pokeWord(vectorBPUTV, epBPUT)
-	env.pokeWord(vectorGBPBV, epGBPB)
-	env.pokeWord(vectorFINDV, epFIND)
-	env.pokeWord(vectorFSCV, epFSC)
-	env.pokeWord(vectorEVNTV, epEVNT)
-	env.pokeWord(vectorUPTV, epUPT)
-	env.pokeWord(vectorNETV, epNET)
-	env.pokeWord(vectorVDUV, epVDU)
-	env.pokeWord(vectorKEYV, epKEY)
-	env.pokeWord(vectorINSV, epINS)
-	env.pokeWord(vectorREMV, epREM)
-	env.pokeWord(vectorCNPV, epCNP)
-	env.pokeWord(vectorIND1V, epIND1)
-	env.pokeWord(vectorIND2V, epIND2)
-	env.pokeWord(vectorIND3V, epIND3)
-
-	// Setup host entry points in page 0xfe, just having RTS is enough to be trapped.
-	for i := entryPoints; i < mosVectors; i++ {
-		env.mem.Poke(i, 0x60 /*RTS*/)
-	}
-
-	// Setup 0xff page
-	for i := mosVectors; i < vectorReset; i++ {
-		// Prefill with nulls
-		env.mem.Poke(i, 0x00 /*BRK*/)
-	}
-
-	// See: https://tobylobster.github.io/mos/mos/S-s24.html
-	writeJMP(env, 0xffb9, epRDRM)
-	writeJMP(env, 0xffbc, epVDUCH)
-	writeJMP(env, 0xffbf, epEVNT)
-	writeJMP(env, 0xffc2, epGSINIT)
-	writeJMP(env, 0xffc5, epGSREAD)
-	writeJMP(env, 0xffc8, epRDCH)
-	writeJMP(env, 0xffcb, epWRCH)
-	writeJMI(env, 0xffce, vectorFINDV)
-	writeJMI(env, 0xffd1, vectorGBPBV)
-	writeJMI(env, 0xffd4, vectorBPUTV)
-	writeJMI(env, 0xffd7, vectorBGETV)
-	writeJMI(env, 0xffda, vectorARGSV)
-	writeJMI(env, 0xffdd, vectorFILEV)
-	writeJMI(env, 0xffe0, vectorRDCHV)
-	env.mem.Poke(0xffe3, 0xc9) // CMP #$0D
-	env.mem.Poke(0xffe4, 0x0d)
-	env.mem.Poke(0xffe5, 0xd0) // BNE $ffee
-	env.mem.Poke(0xffe6, 0x07)
-	env.mem.Poke(0xffe7, 0xa9) // LDA #$0A
-	env.mem.Poke(0xffe8, 0x0a)
-	env.mem.Poke(0xffe9, 0x20) // JSR $ffee
-	env.mem.Poke(0xffea, 0xee)
-	env.mem.Poke(0xffeb, 0xff)
-	env.mem.Poke(0xffec, 0xa9) // LDA #$0D
-	env.mem.Poke(0xffed, 0x0d)
-	writeJMI(env, 0xffee, vectorWRCHV)
-	writeJMI(env, 0xfff1, vectorWORDV)
-	writeJMI(env, 0xfff4, vectorBYTEV)
-	writeJMI(env, 0xfff7, vectorCLIV)
-
-	env.pokeWord(vectorBreak, epSYSBRK)        // To trap breaks from the BRK opcode
-	env.pokeWord(vectorReset, romStartAddress) // The reset vector to point to the loaded ROM entry point
-
-	// ROM wants a 0x01 in A, see http://beebwiki.mdfs.net/Paged_ROM
-	env.cpu.Reset()
-	env.cpu.SetAXYP(1, 0, 0, 0)
-}
-
-func writeJMP(env *environment, address uint16, dest uint16) {
-	env.mem.Poke(address, 0x4c /*JMP*/)
-	env.pokeWord(address+1, dest)
-}
-
-func writeJMI(env *environment, address uint16, dest uint16) {
-	env.mem.Poke(address, 0x6c /*JMP indirect*/)
-	env.pokeWord(address+1, dest)
 }
