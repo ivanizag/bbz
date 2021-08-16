@@ -21,6 +21,10 @@ func main() {
 		"M",
 		false,
 		"dump to the console the MOS calls including console I/O calls")
+	traceMemory := flag.Bool(
+		"s",
+		false,
+		"dump to the console the accesses to Fred, Jim or Sheila")
 	panicOnErr := flag.Bool(
 		"p",
 		false,
@@ -33,5 +37,10 @@ func main() {
 		romFile = "BASIC.ROM"
 	}
 
-	RunMOSEnvironment(romFile, "firmware", *traceCPU, (*traceMOS) || (*traceMOSFull), *traceMOSFull, *panicOnErr)
+	RunMOSEnvironment(romFile, "firmware",
+		*traceCPU,
+		(*traceMOS) || (*traceMOSFull),
+		*traceMOSFull,
+		*traceMemory,
+		*panicOnErr)
 }

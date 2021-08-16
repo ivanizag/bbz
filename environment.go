@@ -11,7 +11,7 @@ import (
 
 type environment struct {
 	cpu *core6502.State
-	mem *AcornMemory
+	mem *acornMemory
 	vdu *vdu
 	in  *bufio.Scanner
 

@@ -42,13 +42,15 @@ bbz [flags] [filename]
 `filename` is the filename of the ROM to run. With no arguments it
 runs the BBC Basic ROM in `BASIC.ROM`.
 
-Avaliable flags (to put before the ROM filename if present):
+AvaIlable flags (to put before the ROM filename if present):
 
 ``` 
   -M	dump to the console the MOS calls including console I/O calls
   -c	dump to the console the CPU execution operations
   -m	dump to the console the MOS calls excluding console I/O calls
   -p	panic on not implemented MOS calls
+  -s	dump to the console the accesses to Fred, Jim or Sheila
+
 ```
 
 ## Usage example

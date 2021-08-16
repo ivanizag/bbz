@@ -1,41 +1,86 @@
 package main
 
-import "io/ioutil"
+import (
+	"fmt"
+	"io/ioutil"
+)
 
-// FlatMemory puts RAM on the 64Kb addressable by the processor
-type AcornMemory struct {
-	data [65536]uint8
+type acornMemory struct {
+	data   [65536]uint8
+	memLog bool
 }
 
-// Peek returns the data on the given address
-func (m *AcornMemory) Peek(address uint16) uint8 {
-	return m.data[address]
+func newAcornMemory(memLog bool) *acornMemory {
+	var a acornMemory
+	a.memLog = memLog
+	return &a
 }
 
-// PeekCode returns the data on the given address
-func (m *AcornMemory) PeekCode(address uint16) uint8 {
-	return m.data[address]
-}
+func (m *acornMemory) Poke(address uint16, value uint8) {
+	if m.memLog {
+		area := memoryArea(address)
+		if area != "" {
+			fmt.Printf("[[[Poke(%s:%02x, %02x]]]\n", area, address&0xff, value)
+		}
+	}
 
-// Poke sets the data at the given address
-func (m *AcornMemory) Poke(address uint16, value uint8) {
 	m.data[address] = value
 }
 
-func (m *AcornMemory) loadBinary(filename string) error {
-	bytes, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return err
+func (m *acornMemory) Peek(address uint16) uint8 {
+	value := m.data[address]
+
+	if m.memLog {
+		area := memoryArea(address)
+		if area != "" {
+			fmt.Printf("[[[Peek(%s:%02x) => %02x]]]\n", area, address&0xff, value)
+		}
 	}
 
-	for i, v := range bytes {
-		m.Poke(uint16(i), uint8(v))
-	}
-
-	return nil
+	return value
 }
 
-func (m *AcornMemory) getString(address uint16, terminator uint8) string {
+func (m *acornMemory) PeekCode(address uint16) uint8 {
+	return m.Peek(address)
+}
+
+func memoryArea(address uint16) string {
+	switch address >> 8 {
+	case 0xfc:
+		return "FRED"
+	case 0xfd:
+		return "JIM"
+	case 0xfe:
+		return "SHEILA"
+	}
+	return ""
+}
+
+func (m *acornMemory) loadFirmware(firmFilename string) {
+	data, err := ioutil.ReadFile(firmFilename)
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < len(data); i++ {
+		m.data[i] = data[i]
+	}
+}
+
+func (m *acornMemory) loadRom(filename string) {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < len(data); i++ {
+		m.data[romStartAddress+uint16(i)] = data[i]
+	}
+}
+
+// helpers
+
+func (m *acornMemory) getString(address uint16, terminator uint8) string {
 	str := ""
 	for {
 		ch := m.Peek(address)
@@ -49,7 +94,7 @@ func (m *AcornMemory) getString(address uint16, terminator uint8) string {
 	return str
 }
 
-func (m *AcornMemory) storeString(address uint16, s string, terminator uint8, maxLength uint8) {
+func (m *acornMemory) storeString(address uint16, s string, terminator uint8, maxLength uint8) {
 	// maxLength not including terminator
 	var i int
 	for i = 0; i < len(s) && i < int(maxLength); i++ {
@@ -58,7 +103,7 @@ func (m *AcornMemory) storeString(address uint16, s string, terminator uint8, ma
 	m.Poke(address+uint16(i), terminator)
 }
 
-func (m *AcornMemory) getSlice(address uint16, length uint16) []uint8 {
+func (m *acornMemory) getSlice(address uint16, length uint16) []uint8 {
 	slice := make([]uint8, 0, length)
 	for i := uint16(0); i < length; i++ {
 		slice = append(slice, m.Peek(address+i))
@@ -66,7 +111,7 @@ func (m *AcornMemory) getSlice(address uint16, length uint16) []uint8 {
 	return slice
 }
 
-func (m *AcornMemory) storeSlice(address uint16, maxLength uint16, data []uint8) uint16 {
+func (m *acornMemory) storeSlice(address uint16, maxLength uint16, data []uint8) uint16 {
 	var i uint16
 	for i = 0; i < maxLength && i < uint16(len(data)); i++ {
 		m.Poke(address+i, data[i])
@@ -74,16 +119,16 @@ func (m *AcornMemory) storeSlice(address uint16, maxLength uint16, data []uint8)
 	return i
 }
 
-func (m *AcornMemory) peekWord(address uint16) uint16 {
+func (m *acornMemory) peekWord(address uint16) uint16 {
 	return uint16(m.Peek(address)) + uint16(m.Peek(address+1))<<8
 }
 
-func (m *AcornMemory) pokeWord(address uint16, value uint16) {
+func (m *acornMemory) pokeWord(address uint16, value uint16) {
 	m.Poke(address, uint8(value&0xff))
 	m.Poke(address+1, uint8(value>>8))
 }
 
-func (m *AcornMemory) peeknbytes(address uint16, n int) uint64 {
+func (m *acornMemory) peeknbytes(address uint16, n int) uint64 {
 	ticks := uint64(0)
 	for i := n - 1; i >= 0; i-- {
 		ticks <<= 8
@@ -92,7 +137,7 @@ func (m *AcornMemory) peeknbytes(address uint16, n int) uint64 {
 	return ticks
 }
 
-func (m *AcornMemory) pokenbytes(address uint16, n int, value uint64) {
+func (m *acornMemory) pokenbytes(address uint16, n int, value uint64) {
 	for i := 0; i < n; i++ {
 		m.Poke(address+uint16(i), uint8(value&0xff))
 		value >>= 8

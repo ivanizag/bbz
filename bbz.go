@@ -11,31 +11,48 @@ import (
 	"github.com/ivanizag/izapple2/core6502"
 )
 
-func RunMOSEnvironment(romFilename string, firmFilename string, cpuLog bool, apiLog bool, apiLogIO bool, panicOnErr bool) {
+/*
+	See:
+		http://www.sprow.co.uk/bbc/library/sidewrom.pdf
+*/
+
+func RunMOSEnvironment(romFilename string, firmFilename string, cpuLog bool, apiLog bool, apiLogIO bool, memLog bool, panicOnErr bool) {
 	// Prepare environment
 	var env environment
 	env.in = bufio.NewScanner(os.Stdin)
 	env.referenceTime = time.Now()
 	env.timer = 0
 	env.lastTimerUpdate = time.Now()
-	env.mem = new(AcornMemory)
+	env.mem = newAcornMemory(memLog)
 	env.cpu = core6502.NewNMOS6502(env.mem)
 	env.cpu.SetTrace(cpuLog)
 	env.vdu = newVdu()
-
-	loadMosFromFile(&env, firmFilename)
-	loadRom(&env, romFilename)
-
 	env.apiLog = apiLog
 	env.apiLogIO = apiLogIO
 	env.panicOnErr = panicOnErr
+
+	env.mem.loadFirmware(firmFilename)
+	env.mem.loadRom(romFilename)
+
+	/*
+		Next, the MOS will set the error point at &FD/&FE to point at the version string (or copyright
+		message if no version string is present).
+	*/
+	copyrightAddress := 0x8000 + 1 + uint16(env.mem.Peek(romCopyrightOffsetPointer))
+	copyrigt := env.mem.getString(copyrightAddress, 0)
+	env.mem.pokeWord(zpErrorPointer, copyrightAddress)
+	/*
+		The MOS also automatically prints the ROM's title string (&8009) so that the user is acknowledged.
+	*/
+	language := env.mem.getString(romTitleString, 0)
+	fmt.Printf("%s - %s\n", language, copyrigt)
 
 	// Execute
 	for !env.stop {
 		env.cpu.ExecuteInstruction()
 
 		pc, sp := env.cpu.GetPCAndSP()
-		if pc >= entryPoints && pc < mosVectors {
+		if pc >= entryPoints && pc <= epEntryPointsLast {
 			a, x, y, p := env.cpu.GetAXYP()
 
 			// Intercept MOS API calls.
@@ -187,7 +204,7 @@ func RunMOSEnvironment(romFilename string, firmFilename string, cpuLog bool, api
 				env.mem.Poke(zpAccumulator, a)
 				env.mem.pokeWord(zpErrorPointer, address)
 				env.cpu.SetAXYP(pStacked&0x10, x, y, p)
-				brkv := env.mem.peekWord(vectorBRKV)
+				brkv := env.mem.peekWord(vectorBRK)
 				env.cpu.SetPC(brkv)
 
 				env.log(fmt.Sprintf("BREAK(ERR=%02x, '%s')", faultNumber, faultString))
