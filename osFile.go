@@ -10,13 +10,13 @@ func execOSFILE(env *environment) {
 
 	// See: http://beebwiki.mdfs.net/OSFILE
 	controlBlock := uint16(x) + uint16(y)<<8
-	filenameAddress := env.peekWord(controlBlock)
-	loadAddress := env.peekWord(controlBlock + 0x2)
-	executionAddress := env.peekWord(controlBlock + 0x6)
-	startAddress := env.peekWord(controlBlock + 0xa)
-	endAddress := env.peekWord(controlBlock + 0xe)
+	filenameAddress := env.mem.peekWord(controlBlock)
+	loadAddress := env.mem.peekWord(controlBlock + 0x2)
+	executionAddress := env.mem.peekWord(controlBlock + 0x6)
+	startAddress := env.mem.peekWord(controlBlock + 0xa)
+	endAddress := env.mem.peekWord(controlBlock + 0xe)
 
-	filename := env.getStringFromMem(filenameAddress, 0x0d)
+	filename := env.mem.getString(filenameAddress, 0x0d)
 	filesize := endAddress - startAddress
 
 	switch a {
@@ -25,7 +25,7 @@ func execOSFILE(env *environment) {
 			Save a block of memory as a file using the
 			information provided in the parameter block.
 		*/
-		data := env.getMemSlice(startAddress, filesize)
+		data := env.mem.getSlice(startAddress, filesize)
 		err := ioutil.WriteFile(filename, data, 0644)
 		if err != nil {
 			env.raiseError(errorTodo, err.Error())
@@ -48,12 +48,12 @@ func execOSFILE(env *environment) {
 			env.raiseError(errorTodo, err.Error())
 		}
 		// NOTE: There is no maxLength?
-		env.storeSliceinMem(loadAddress, uint16(len(data)), data)
+		env.mem.storeSlice(loadAddress, uint16(len(data)), data)
 		filesize = uint16(len(data))
 	}
 
-	env.pokeWord(controlBlock+0xa, filesize)
-	env.pokeWord(controlBlock+0x3, 0x33 /*attributes*/)
+	env.mem.pokeWord(controlBlock+0xa, filesize)
+	env.mem.pokeWord(controlBlock+0x3, 0x33 /*attributes*/)
 
 	env.log(fmt.Sprintf("OSFILE(A=%02x,FCB=%04x,FILE=%s,SIZE=%v)", a, controlBlock, filename, filesize))
 

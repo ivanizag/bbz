@@ -18,7 +18,7 @@ func execOSCLI(env *environment) {
 		carriage return character (ASCII &0D/13)
 	*/
 	xy := uint16(x) + uint16(y)<<8
-	line := env.getStringFromMem(xy, 0x0d)
+	line := env.mem.getString(xy, 0x0d)
 	fields := strings.Fields(line)
 	command := strings.ToUpper(fields[0])
 	// The command-line interpreter does not distinguish between upper and lower case characters in the command name

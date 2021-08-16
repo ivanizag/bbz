@@ -18,7 +18,7 @@ func RunMOSEnvironment(romFilename string, firmFilename string, cpuLog bool, api
 	env.referenceTime = time.Now()
 	env.timer = 0
 	env.lastTimerUpdate = time.Now()
-	env.mem = new(core6502.FlatMemory)
+	env.mem = new(AcornMemory)
 	env.cpu = core6502.NewNMOS6502(env.mem)
 	env.cpu.SetTrace(cpuLog)
 	env.vdu = newVdu()
@@ -179,15 +179,15 @@ func RunMOSEnvironment(romFilename string, firmFilename string, cpuLog bool, api
 					language has previously set up to point to its error handler).
 				*/
 				pStacked := env.mem.Peek(0x100 + uint16(sp+1))
-				address := env.peekWord(0x100+uint16(sp+2)) - 1
+				address := env.mem.peekWord(0x100+uint16(sp+2)) - 1
 				faultNumber := env.mem.Peek(address)
 				faultMessage := address + 1
-				faultString := env.getStringFromMem(faultMessage, 0)
+				faultString := env.mem.getString(faultMessage, 0)
 
 				env.mem.Poke(zpAccumulator, a)
-				env.pokeWord(zpErrorPointer, address)
+				env.mem.pokeWord(zpErrorPointer, address)
 				env.cpu.SetAXYP(pStacked&0x10, x, y, p)
-				brkv := env.peekWord(vectorBRKV)
+				brkv := env.mem.peekWord(vectorBRKV)
 				env.cpu.SetPC(brkv)
 
 				env.log(fmt.Sprintf("BREAK(ERR=%02x, '%s')", faultNumber, faultString))

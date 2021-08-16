@@ -133,15 +133,15 @@ func loadRom(env *environment, filename string) {
 	}
 
 	// See http://www.sprow.co.uk/bbc/library/sidewrom.pdf
-	language := env.getStringFromMem(romTitleString, 0)
+	language := env.mem.getString(romTitleString, 0)
 	copyrightAddress := 0x8000 + 1 + uint16(env.mem.Peek(romCopyrightOffsetPointer))
-	copyrigt := env.getStringFromMem(copyrightAddress, 0)
+	copyrigt := env.mem.getString(copyrightAddress, 0)
 
 	/*
 		Next, the MOS will set the error point at &FD/&FE to point at the version string (or copyright
 		message if no version string is present).
 	*/
-	env.pokeWord(zpErrorPointer, copyrightAddress)
+	env.mem.pokeWord(zpErrorPointer, copyrightAddress)
 	/*
 		The MOS also automatically prints the ROM's title string (&8009) so that the user is acknowledged.
 	*/
