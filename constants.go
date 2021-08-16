@@ -17,6 +17,7 @@ Memory map, pages:
 
 */
 const (
+	zpStr          uint16 = 0x00f2 // OSCLI command line
 	zpAccumulator  uint16 = 0x00fc
 	zpErrorPointer uint16 = 0x00fd
 
@@ -29,6 +30,9 @@ const (
 	romTypeByte               uint16 = 0x8006
 	romCopyrightOffsetPointer uint16 = 0x8007
 	romTitleString            uint16 = 0x8009
+
+	// Support code on the firmware. Check firmware.lst when changing firmware.s
+	procCLITOROM uint16 = 0xf000
 
 	// Scratch area for errors in page 0xfa
 	errorArea             uint16 = 0xfa00

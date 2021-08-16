@@ -1,20 +1,22 @@
 ca65 V2.18 - Ubuntu 2.18-1
-Main file   : firmware.s
-Current file: firmware.s
+Main file   : asm/firmware.s
+Current file: asm/firmware.s
 
 000000r 1               ; build:
-000000r 1               ;    cl65 -l firmware.lst firmware.s --config firmware.cfg
+000000r 1               ;   cl65 -l asm/firmware.lst asm/firmware.s --config asm/firmware.cfg -o firmware
+000000r 1               ; Review constants.go when this code is changed
 000000r 1               
 000000r 1               
 000000r 1               ; constants
-000000r 1                               .export ENTRY := $8000
+000000r 1                               .export LANGUAGE_ENTRY := $8000
+000000r 1                               .export SERVICE_ENTRY := $8003
 000000r 1               
 000000r 1               
 000000r 1               ; boot code
 000000r 1                               .org $0000
 000000  1               BOOT:
-000000  1  A9 01                        LDA #$1
-000002  1  4C 00 80                     JMP ENTRY
+000000  1  A9 01                        lda #$1
+000002  1  4C 00 80                     jmp LANGUAGE_ENTRY
 000005  1               
 000005  1               
 000005  1               ; init ram vectors
@@ -51,44 +53,74 @@ Current file: firmware.s
 000232  1  1E FB        IND2V:          .addr epIND2
 000234  1  1F FB        IND3V:          .addr epIND3
 000236  1               
-000236  1               
-000236  1               ; bbz host entry points
-000236  1  xx xx xx xx                  .res $fb00 - *
+000236  1               ; support code
+000236  1  xx xx xx xx                  .res $f000 - *
 00023A  1  xx xx xx xx  
 00023E  1  xx xx xx xx  
+00F000  1                               .org $f000
+00F000  1               
+00F000  1               ; Send cli command to ROM and check the result
+00F000  1               ; Expects A=4, X=F, Y=0, the command to be pointed by $f2
+00F000  1               CLITOROM:
+00F000  1  20 03 80                     jsr SERVICE_ENTRY
+00F003  1  AA                           tax
+00F004  1  F0 0E                        beq CLAIMED
+00F006  1  00                           brk                     ; "254-Bad command" error
+00F007  1  FE                           .byte $fe
+00F008  1  C2 41 44 20                  .asciiz "Bad command"
+00F00C  1  43 4F 4D 4D  
+00F010  1  41 4E 44 00  
+00F014  1  60           CLAIMED:        rts
+00F015  1               
+00F015  1               
+00F015  1               ; area to store an error message
+00F015  1  xx xx xx xx                  .res $fa00 - *
+00F019  1  xx xx xx xx  
+00F01D  1  xx xx xx xx  
+00FA00  1                               .org $fa00
+00FA00  1  00           errorArea:      brk
+00FA01  1  00           errorCode:      .byte 0
+00FA02  1  C8 45 4C 4C  errorMessage:   .asciiz "Hello world"
+00FA06  1  4F 20 57 4F  
+00FA0A  1  52 4C 44 00  
+00FA0E  1               
+00FA0E  1               ; bbz host entry points
+00FA0E  1  xx xx xx xx                  .res $fb00 - *
+00FA12  1  xx xx xx xx  
+00FA16  1  xx xx xx xx  
 00FB00  1                               .org $fb00
-00FB00  1  60           epUPT:          rts       ; 0xfb00
-00FB01  1  60           epEVNT:         rts       ; 0xfb01
-00FB02  1  60           epFSC:          rts       ; 0xfb02
-00FB03  1  60           epFIND:         rts       ; 0xfb03
-00FB04  1  60           epGBPB:         rts       ; 0xfb04
-00FB05  1  60           epBPUT:         rts       ; 0xfb05
-00FB06  1  60           epBGET:         rts       ; 0xfb06
-00FB07  1  60           epARGS:         rts       ; 0xfb07
-00FB08  1  60           epFILE:         rts       ; 0xfb08
-00FB09  1  60           epRDCH:         rts       ; 0xfb09
-00FB0A  1  60           epWRCH:         rts       ; 0xfb0a
-00FB0B  1  60           epWORD:         rts       ; 0xfb0b
-00FB0C  1  60           epBYTE:         rts       ; 0xfb0c
-00FB0D  1  60           epCLI:          rts       ; 0xfb0d
-00FB0E  1  60           epIRQ2:         rts       ; 0xfb0e
-00FB0F  1  60           epIRQ1:         rts       ; 0xfb0f
-00FB10  1  60           epBRK:          rts       ; 0xfb10
-00FB11  1  60           epUSER:         rts       ; 0xfb11
-00FB12  1  60           epSYSBRK:       rts       ; 0xfb12
-00FB13  1  60           epRDRM:         rts       ; 0xfb13
-00FB14  1  60           epVDUCH:        rts       ; 0xfb14
-00FB15  1  60           epGSINIT:       rts       ; 0xfb16
-00FB16  1  60           epGSREAD:       rts       ; 0xfb17
-00FB17  1  60           epNET:          rts       ; 0xfb18
-00FB18  1  60           epVDU:          rts       ; 0xfb19
-00FB19  1  60           epKEY:          rts       ; 0xfb1a
-00FB1A  1  60           epINS:          rts       ; 0xfb1b
-00FB1B  1  60           epREM:          rts       ; 0xfb1c
-00FB1C  1  60           epCNP:          rts       ; 0xfb1d
-00FB1D  1  60           epIND1:         rts       ; 0xfb1e
-00FB1E  1  60           epIND2:         rts       ; 0xfb1f
-00FB1F  1  60           epIND3:         rts       ; 0xfb20
+00FB00  1  60           epUPT:          rts                     ; 0xfb00
+00FB01  1  60           epEVNT:         rts                     ; 0xfb01
+00FB02  1  60           epFSC:          rts                     ; 0xfb02
+00FB03  1  60           epFIND:         rts                     ; 0xfb03
+00FB04  1  60           epGBPB:         rts                     ; 0xfb04
+00FB05  1  60           epBPUT:         rts                     ; 0xfb05
+00FB06  1  60           epBGET:         rts                     ; 0xfb06
+00FB07  1  60           epARGS:         rts                     ; 0xfb07
+00FB08  1  60           epFILE:         rts                     ; 0xfb08
+00FB09  1  60           epRDCH:         rts                     ; 0xfb09
+00FB0A  1  60           epWRCH:         rts                     ; 0xfb0a
+00FB0B  1  60           epWORD:         rts                     ; 0xfb0b
+00FB0C  1  60           epBYTE:         rts                     ; 0xfb0c
+00FB0D  1  60           epCLI:          rts                     ; 0xfb0d
+00FB0E  1  60           epIRQ2:         rts                     ; 0xfb0e
+00FB0F  1  60           epIRQ1:         rts                     ; 0xfb0f
+00FB10  1  60           epBRK:          rts                     ; 0xfb10
+00FB11  1  60           epUSER:         rts                     ; 0xfb11
+00FB12  1  60           epSYSBRK:       rts                     ; 0xfb12
+00FB13  1  60           epRDRM:         rts                     ; 0xfb13
+00FB14  1  60           epVDUCH:        rts                     ; 0xfb14
+00FB15  1  60           epGSINIT:       rts                     ; 0xfb16
+00FB16  1  60           epGSREAD:       rts                     ; 0xfb17
+00FB17  1  60           epNET:          rts                     ; 0xfb18
+00FB18  1  60           epVDU:          rts                     ; 0xfb19
+00FB19  1  60           epKEY:          rts                     ; 0xfb1a
+00FB1A  1  60           epINS:          rts                     ; 0xfb1b
+00FB1B  1  60           epREM:          rts                     ; 0xfb1c
+00FB1C  1  60           epCNP:          rts                     ; 0xfb1d
+00FB1D  1  60           epIND1:         rts                     ; 0xfb1e
+00FB1E  1  60           epIND2:         rts                     ; 0xfb1f
+00FB1F  1  60           epIND3:         rts                     ; 0xfb20
 00FB20  1               
 00FB20  1               
 00FB20  1               ; MOS function calls
@@ -122,7 +154,7 @@ Current file: firmware.s
 00FFFA  1               
 00FFFA  1               
 00FFFA  1               ; 6502 vectors
-00FFFA  1  00 00                        .addr $0000       ; NMI address
-00FFFC  1  00 80                        .addr ENTRY    ; RESET address
-00FFFE  1  12 FB                        .addr epSYSBRK      ; IRQ address
+00FFFA  1  00 00                        .addr $0000             ; NMI address
+00FFFC  1  00 80                        .addr LANGUAGE_ENTRY    ; RESET address
+00FFFE  1  12 FB                        .addr epSYSBRK          ; IRQ address
 00FFFE  1               

@@ -52,7 +52,14 @@ func RunMOSEnvironment(romFilename string, firmFilename string, cpuLog bool, api
 		env.cpu.ExecuteInstruction()
 
 		pc, sp := env.cpu.GetPCAndSP()
-		if pc >= entryPoints && pc <= epEntryPointsLast {
+
+		if pc == romStartAddress {
+			a, _, _, _ := env.cpu.GetAXYP()
+			env.log(fmt.Sprintf("LANGUAGE(A=%02x)", a))
+		} else if pc == romServiceEntry {
+			a, x, _, _ := env.cpu.GetAXYP()
+			env.log(fmt.Sprintf("SERVICE(CMD=%02x, SLOT=%02x)", a, x))
+		} else if pc >= entryPoints && pc <= epEntryPointsLast {
 			a, x, y, p := env.cpu.GetAXYP()
 
 			// Intercept MOS API calls.
@@ -206,6 +213,8 @@ func RunMOSEnvironment(romFilename string, firmFilename string, cpuLog bool, api
 				env.cpu.SetAXYP(pStacked&0x10, x, y, p)
 				brkv := env.mem.peekWord(vectorBRK)
 				env.cpu.SetPC(brkv)
+
+				// TODO: multiple ROMS: service call 6 before the jump to vectorBRK
 
 				env.log(fmt.Sprintf("BREAK(ERR=%02x, '%s')", faultNumber, faultString))
 

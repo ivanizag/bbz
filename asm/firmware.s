@@ -1,16 +1,18 @@
 ; build:
-;    cl65 -l firmware.lst firmware.s --config firmware.cfg
+;   cl65 -l asm/firmware.lst asm/firmware.s --config asm/firmware.cfg -o firmware
+; Review constants.go when this code is changed
 
 
 ; constants
-                .export ENTRY := $8000
+                .export LANGUAGE_ENTRY := $8000
+                .export SERVICE_ENTRY := $8003
 
 
 ; boot code
                 .org $0000
 BOOT:
-                LDA #$1
-                JMP ENTRY
+                lda #$1
+                jmp LANGUAGE_ENTRY
 
 
 ; init ram vectors
@@ -45,42 +47,64 @@ IND1V:          .addr epIND1
 IND2V:          .addr epIND2
 IND3V:          .addr epIND3
 
+; support code
+                .res $f000 - *
+                .org $f000
+
+; Send cli command to ROM and check the result
+; Expects A=4, X=F, Y=0, the command to be pointed by $f2
+CLITOROM:                               
+                jsr SERVICE_ENTRY
+                tax
+                beq CLAIMED
+                brk                     ; "254-Bad command" error
+                .byte $fe
+                .asciiz "Bad command"
+CLAIMED:        rts
+
+
+; area to store an error message
+                .res $fa00 - *
+                .org $fa00
+errorArea:      brk
+errorCode:      .byte 0
+errorMessage:   .asciiz "Hello world"
 
 ; bbz host entry points
                 .res $fb00 - *
                 .org $fb00
-epUPT:          rts       ; 0xfb00
-epEVNT:         rts       ; 0xfb01
-epFSC:          rts       ; 0xfb02
-epFIND:         rts       ; 0xfb03
-epGBPB:         rts       ; 0xfb04
-epBPUT:         rts       ; 0xfb05
-epBGET:         rts       ; 0xfb06
-epARGS:         rts       ; 0xfb07
-epFILE:         rts       ; 0xfb08
-epRDCH:         rts       ; 0xfb09
-epWRCH:         rts       ; 0xfb0a
-epWORD:         rts       ; 0xfb0b
-epBYTE:         rts       ; 0xfb0c
-epCLI:          rts       ; 0xfb0d
-epIRQ2:         rts       ; 0xfb0e
-epIRQ1:         rts       ; 0xfb0f
-epBRK:          rts       ; 0xfb10
-epUSER:         rts       ; 0xfb11
-epSYSBRK:       rts       ; 0xfb12
-epRDRM:         rts       ; 0xfb13
-epVDUCH:        rts       ; 0xfb14
-epGSINIT:       rts       ; 0xfb16
-epGSREAD:       rts       ; 0xfb17
-epNET:          rts       ; 0xfb18
-epVDU:          rts       ; 0xfb19
-epKEY:          rts       ; 0xfb1a
-epINS:          rts       ; 0xfb1b
-epREM:          rts       ; 0xfb1c
-epCNP:          rts       ; 0xfb1d
-epIND1:         rts       ; 0xfb1e
-epIND2:         rts       ; 0xfb1f
-epIND3:         rts       ; 0xfb20
+epUPT:          rts                     ; 0xfb00
+epEVNT:         rts                     ; 0xfb01
+epFSC:          rts                     ; 0xfb02
+epFIND:         rts                     ; 0xfb03
+epGBPB:         rts                     ; 0xfb04
+epBPUT:         rts                     ; 0xfb05
+epBGET:         rts                     ; 0xfb06
+epARGS:         rts                     ; 0xfb07
+epFILE:         rts                     ; 0xfb08
+epRDCH:         rts                     ; 0xfb09
+epWRCH:         rts                     ; 0xfb0a
+epWORD:         rts                     ; 0xfb0b
+epBYTE:         rts                     ; 0xfb0c
+epCLI:          rts                     ; 0xfb0d
+epIRQ2:         rts                     ; 0xfb0e
+epIRQ1:         rts                     ; 0xfb0f
+epBRK:          rts                     ; 0xfb10
+epUSER:         rts                     ; 0xfb11
+epSYSBRK:       rts                     ; 0xfb12
+epRDRM:         rts                     ; 0xfb13
+epVDUCH:        rts                     ; 0xfb14
+epGSINIT:       rts                     ; 0xfb16
+epGSREAD:       rts                     ; 0xfb17
+epNET:          rts                     ; 0xfb18
+epVDU:          rts                     ; 0xfb19
+epKEY:          rts                     ; 0xfb1a
+epINS:          rts                     ; 0xfb1b
+epREM:          rts                     ; 0xfb1c
+epCNP:          rts                     ; 0xfb1d
+epIND1:         rts                     ; 0xfb1e
+epIND2:         rts                     ; 0xfb1f
+epIND3:         rts                     ; 0xfb20
 
 
 ; MOS function calls
@@ -112,6 +136,6 @@ OSCLI:          jmp (CLIV)              ; OSCLI pass string to command line inte
 
 
 ; 6502 vectors
-                .addr $0000       ; NMI address
-                .addr ENTRY    ; RESET address
-                .addr epSYSBRK      ; IRQ address
+                .addr $0000             ; NMI address
+                .addr LANGUAGE_ENTRY    ; RESET address
+                .addr epSYSBRK          ; IRQ address

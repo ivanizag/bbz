@@ -83,7 +83,7 @@ func (m *acornMemory) loadRom(filename string) {
 func (m *acornMemory) getString(address uint16, terminator uint8) string {
 	str := ""
 	for {
-		ch := m.Peek(address)
+		ch := m.Peek(address) & 0x7f
 		//fmt.Printf("{%04x: %02x\n", address, ch)
 		if ch == terminator {
 			break

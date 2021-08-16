@@ -67,6 +67,8 @@ func execOSCLI(env *environment) {
 	case "*HELP":
 		msg = "bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz"
 
+		// TODO: multiple ROMS: service call 9 after the MOS message
+
 	case "*.":
 		fallthrough
 	case "*CAT":
@@ -117,7 +119,17 @@ func execOSCLI(env *environment) {
 		execOSBYTE(env)
 
 	default:
-		env.raiseError(254, "Bad command")
+		romType := env.mem.Peek(romTypeByte)
+		if (romType & 0x80) != 0 {
+			// The ROM has a service entry. Let's try.
+			env.mem.pokeWord(zpStr, xy)
+			cmd := uint8(4)       // Unrecognized command
+			romSlot := uint8(0xf) // The only supported slot
+			env.cpu.SetAXYP(cmd, romSlot, 1, p)
+			env.cpu.SetPC(procCLITOROM)
+		} else {
+			env.raiseError(254, "Bad command")
+		}
 	}
 
 	if msg != "" {
