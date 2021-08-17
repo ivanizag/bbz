@@ -57,7 +57,7 @@ func main() {
 		*traceMemory,
 		*panicOnErr)
 
-	env.mem.loadFirmware("firmware")
+	env.mem.loadFirmware()
 
 	for i, rom := range roms {
 		if *rom != "" {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
 	"io/ioutil"
 )
@@ -74,14 +75,12 @@ func memoryArea(address uint16) string {
 	return ""
 }
 
-func (m *acornMemory) loadFirmware(firmFilename string) {
-	data, err := ioutil.ReadFile(firmFilename)
-	if err != nil {
-		panic(err)
-	}
+//go:embed firmware
+var firmware []byte
 
-	for i := 0; i < len(data); i++ {
-		m.data[i] = data[i]
+func (m *acornMemory) loadFirmware() {
+	for i := 0; i < len(firmware); i++ {
+		m.data[i] = firmware[i]
 	}
 }
 
