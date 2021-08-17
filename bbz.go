@@ -12,20 +12,6 @@ import (
 */
 
 func RunMOS(env *environment) {
-
-	/*
-		Next, the MOS will set the error point at &FD/&FE to point at the version string (or copyright
-		message if no version string is present).
-	*/
-	copyrightAddress := 0x8000 + 1 + uint16(env.mem.Peek(romCopyrightOffsetPointer))
-	copyrigt := env.mem.getString(copyrightAddress, 0)
-	env.mem.pokeWord(zpErrorPointer, copyrightAddress)
-	/*
-		The MOS also automatically prints the ROM's title string (&8009) so that the user is acknowledged.
-	*/
-	language := env.mem.getString(romTitleString, 0)
-	fmt.Printf("%s - %s\n", language, copyrigt)
-
 	// Execute
 	for !env.stop {
 		env.cpu.ExecuteInstruction()

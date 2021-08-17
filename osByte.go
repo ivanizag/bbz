@@ -154,6 +154,19 @@ func execOSBYTE(env *environment) {
 		*/
 		// TODO
 
+	case 0x8e:
+		option = "Enter language ROM"
+		/*
+			Entry parameters: X determines which language ROM is entered
+			The selected language will be re-entered after a soft BREAK.
+			The action of this call is to printout the language name and enter the selected
+			language ROM at &8000 with A=1. Locations &FD and &FE in zero page point to the
+			copyright message in the ROM. When a Tube is present this call will copy the
+			language across to the second processor.
+		*/
+		env.initLanguage(x)
+		newA = 1
+
 	case 0xca:
 		option = "Read/write keyboard status byte"
 		/*
@@ -181,6 +194,17 @@ func execOSBYTE(env *environment) {
 		} else {
 			env.notImplemented("OSBYTEda for x or y not zero")
 		}
+
+	case 0xea:
+		option = "R/W Tube present flag"
+		/*
+			The value 255 indicates the Tube is present 0 indicates it is not
+			Writing to this value is not recommended
+
+			We return 0 always
+		*/
+		newX = 0
+		newY = 0
 
 	default:
 		env.notImplemented(fmt.Sprintf("OSBYTE%02x", a))

@@ -25,6 +25,7 @@ References:
 ## Features
 - Some of the MOS entrypoints and VDU control codes are defined.
 - Can run BBC BASIC and most of the language ROMs.
+- Can load up to 16 sideways ROMs.
 - Saves and loads files from the host filesystem.
 - Does some of the mode 7 text coloring using ANSI escape codes on the terminal. Try `VDU 65,129,66,130,67,132,68,135,69,13,10` on BBC BASIC.
 - OSCLI comands suported:
@@ -39,8 +40,8 @@ References:
 bbz [flags] [filename]
 ```
 
-`filename` is the filename of the ROM to run. With no arguments it
-runs the BBC Basic ROM in `BASIC.ROM`.
+`filename` is the filename of the ROM to run (the same as `-rom0`). By default, it
+uses the BBC Basic ROM in `BASIC.ROM`.
 
 AvaIlable flags (to put before the ROM filename if present):
 
@@ -50,6 +51,40 @@ AvaIlable flags (to put before the ROM filename if present):
   -m	dump to the console the MOS calls excluding console I/O calls
   -p	panic on not implemented MOS calls
   -s	dump to the console the accesses to Fred, Jim or Sheila
+  -rom0 string
+    	filename for rom 0 (slot 0xf)
+  -rom1 string
+    	filename for rom 1 (slot 0xe)
+  -rom2 string
+    	filename for rom 2 (slot 0xd)
+  -rom3 string
+    	filename for rom 3 (slot 0xc)
+  -rom4 string
+    	filename for rom 4 (slot 0xb)
+  -rom5 string
+    	filename for rom 5 (slot 0xa)
+  -rom6 string
+    	filename for rom 6 (slot 0x9)
+  -rom7 string
+    	filename for rom 7 (slot 0x8)
+  -rom8 string
+    	filename for rom 8 (slot 0x7)
+  -rom9 string
+    	filename for rom 9 (slot 0x6)
+  -rom10 string
+    	filename for rom 10 (slot 0x5)
+  -rom11 string
+    	filename for rom 11 (slot 0x4)
+  -rom12 string
+    	filename for rom 12 (slot 0x3)
+  -rom13 string
+    	filename for rom 13 (slot 0x2)
+  -rom14 string
+    	filename for rom 14 (slot 0x1)
+  -rom15 string
+    	filename for rom 15 (slot 0x0)
+
+
 
 ```
 
@@ -108,3 +143,31 @@ Using mode 7 colors:
 
 ![mode 7 colors](doc/vdu_colors.png)
 
+Using several ROMs at once:
+```
+$ go run *.go -rom0 BASIC.ROM -rom1 ROMs/Forth_103.rom -rom2 ROMs/LISP-200.rom -rom3 ROMs/COMAL.rom
+bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz
+(tip: uppercase is usually needed)
+
+BASIC - (C)1982 Acorn
+
+>*LISP
+LISP - (C)1982 Acornsoft/1979 Owl Computers
+
+
+Evaluate : (* '*FORTH)
+FORTH - (C) Acornsoft Ltd. 1983
+
+COLD or WARM start (C/W)? C
+
+
+FORTH
+OK
+OS' *COMAL'
+COMAL - (C)Acorn
+→*BASIC
+BASIC - (C)1982 Acorn
+
+>
+
+```

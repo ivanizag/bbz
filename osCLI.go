@@ -24,6 +24,7 @@ func execOSCLI(env *environment) {
 	// The command-line interpreter does not distinguish between upper and lower case characters in the command name
 	command = strings.ToUpper(command)
 	params := fields[1:]
+	handled := false
 
 	if command == "*" && len(params) > 0 {
 		// There are spaces between the * and the command
@@ -61,11 +62,13 @@ func execOSCLI(env *environment) {
 			for example.
 		*/
 		// do nothing
+		handled = true
 
 	case "*H.":
 		fallthrough
 	case "*HELP":
 		msg = "bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz"
+		handled = true
 
 		// TODO: multiple ROMS: service call 9 after the MOS message
 
@@ -74,9 +77,11 @@ func execOSCLI(env *environment) {
 	case "*CAT":
 		// TODO
 		msg = "<<directory placeholder>>"
+		handled = true
 
 	case "*QUIT":
 		env.stop = true
+		handled = true
 
 	case "*HOST":
 		if len(params) == 0 {
@@ -89,6 +94,7 @@ func execOSCLI(env *environment) {
 			}
 			fmt.Println(string(stdout))
 		}
+		handled = true
 
 	case "*FX":
 		// Parse  *FX args
@@ -117,14 +123,27 @@ func execOSCLI(env *environment) {
 		// Send to OSBYTE
 		env.cpu.SetAXYP(uint8(argA), uint8(argX), uint8(argY), p)
 		execOSBYTE(env)
+		handled = true
 
-	default:
+	case "*BASIC":
+		// Runs the first language ROM with no service entry
+		for slot := 0xf; slot >= 0; slot-- {
+			romType := env.mem.data[romTypeTable+uint16(slot)]
+			if romType&0b1100_0000 == 0b0100_0000 { // bit 7 clear, bit 6 set
+				env.initLanguage(uint8(slot))
+				handled = true
+				break
+			}
+		}
+	}
+
+	if !handled {
 		// Send to the other ROMS if available.
 		env.mem.pokeWord(zpStr, xy)
 		cmd := uint8(4) // Unrecognized command
 		env.cpu.SetAXYP(cmd, x, 1, p)
 		env.cpu.SetPC(procCLITOROMS)
-		// procCLITOROMS issues a 254-Bad command if the command is not handles by any ROM
+		// procCLITOROMS issues a 254-Bad command if the command is not handled by any ROM
 	}
 
 	if msg != "" {

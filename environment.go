@@ -60,6 +60,40 @@ func (env *environment) getFile(handle uint8) *os.File {
 	return nil
 }
 
+func (env *environment) initUpperLanguage() {
+	for slot := 0xf; slot >= 0; slot-- {
+		romType := env.mem.data[romTypeTable+uint16(slot)]
+		if romType&0x40 != 0 {
+			env.initLanguage(uint8(slot))
+			return
+		}
+	}
+
+	panic("There is no language ROM available to boot")
+}
+
+func (env *environment) initLanguage(slot uint8) {
+	env.mem.Poke(zpROMSelect, slot)
+	env.mem.Poke(sheila_rom_latch, slot)
+
+	/*
+		Next, the MOS will set the error point at &FD/&FE to point at the version string (or copyright
+		message if no version string is present).
+	*/
+	copyrightAddress := 0x8000 + 1 + uint16(env.mem.Peek(romCopyrightOffsetPointer))
+	copyrigt := env.mem.getString(copyrightAddress, 0)
+	env.mem.pokeWord(zpErrorPointer, copyrightAddress)
+	/*
+		The MOS also automatically prints the ROM's title string (&8009) so that the user is acknowledged.
+	*/
+	language := env.mem.getString(romTitleString, 0)
+	fmt.Printf("%s - %s\n", language, copyrigt)
+
+	_, x, y, p := env.cpu.GetAXYP()
+	env.cpu.SetAXYP(1, x, y, p)
+	env.cpu.SetPC(romStartAddress)
+}
+
 func (env *environment) raiseError(code uint8, msg string) {
 	/*
 		The BBC microcomputer adopts a standard pattern of bytes

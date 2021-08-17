@@ -4,7 +4,7 @@
 
 
 ; constants
-                .exportzp ROM_SELECT := $f4 
+                .exportzp ROM_SELECT := $f4
                 .export ROM_TABLE := $023a
                 .export LANGUAGE_ENTRY := $8000
                 .export SERVICE_ENTRY := $8003
@@ -82,7 +82,7 @@ OSBYTE_143:		lda	ROM_SELECT          ; Get current ROM number
 			    ldx	#$0f                ; Start at ROM 15
 				; Issue service call loop
 NEXT:			inc ROM_TABLE,X         ; Read bit 7 on ROM type table (no ROM has type 254 &FE)
-                dec ROM_TABLE,X         ; 
+                dec ROM_TABLE,X         ;
                 bpl SKIP                ; If not set (+ve result), step to next ROM down
                 stx ROM_SELECT          ; Otherwise, select this ROM, &F4 RAM copy
                 stx ROM_LATCH           ; Page in selected ROM

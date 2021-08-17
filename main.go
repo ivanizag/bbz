@@ -29,22 +29,26 @@ func main() {
 		"p",
 		false,
 		"panic on not implemented MOS calls")
-	rom0 := flag.String(
-		"rom",
-		"",
-		"filename for rom 0 (slot 0xf)")
-	rom1 := flag.String(
-		"rom1",
-		"",
-		"filename for rom 1 (slot 0xe)")
+
+	roms := make([]*string, 16)
+	for i := 0; i < 16; i++ {
+		roms[i] = flag.String(
+			fmt.Sprintf("rom%v", i),
+			"",
+			fmt.Sprintf("filename for rom %v (slot 0x%x)", i, 15-i))
+	}
+
 	flag.Parse()
 
-	romFile := flag.Arg(0)
-	if *rom0 != "" {
-		romFile = *rom0
-	}
-	if romFile == "" {
-		romFile = "BASIC.ROM"
+	if *roms[0] == "" {
+		romFile := flag.Arg(0)
+		if romFile == "" {
+			def := "BASIC.ROM"
+			roms[0] = &def
+		} else {
+			roms[0] = &romFile
+		}
+
 	}
 
 	env := newEnvironment(*traceCPU,
@@ -54,11 +58,14 @@ func main() {
 		*panicOnErr)
 
 	env.mem.loadFirmware("firmware")
-	env.mem.loadRom(romFile, 0xf)
-	env.mem.Poke(zpROMSelect, 0xf)
-	if *rom1 != "" {
-		env.mem.loadRom(*rom1, 0xe)
+
+	for i, rom := range roms {
+		if *rom != "" {
+			env.mem.loadRom(*rom, uint8(0xf-i))
+		}
 	}
+
+	env.initUpperLanguage()
 
 	RunMOS(env)
 }
