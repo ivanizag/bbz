@@ -1,11 +1,14 @@
 ; build:
-;   cl65 -l asm/firmware.lst asm/firmware.s --config asm/firmware.cfg -o firmware
+;   cl65 --target none -l asm/firmware.lst asm/firmware.s --config asm/firmware.cfg -o firmware
 ; Review constants.go when this code is changed
 
 
 ; constants
+                .exportzp ROM_SELECT := $f4 
+                .export ROM_TABLE := $023a
                 .export LANGUAGE_ENTRY := $8000
                 .export SERVICE_ENTRY := $8003
+                .export ROM_LATCH := $fe30
 
 
 ; boot code
@@ -51,16 +54,52 @@ IND3V:          .addr epIND3
                 .res $f000 - *
                 .org $f000
 
-; Send cli command to ROM and check the result
+; Send cli command to ROMS and check the result
+; See https://github.com/raybellis/mos120/blob/2e2ff80708e79553643e4b77c947b0652117731b/mos120.s#L10701
 ; Expects A=4, X=F, Y=0, the command to be pointed by $f2
-CLITOROM:                               
-                jsr SERVICE_ENTRY
-                tax
-                beq CLAIMED
+CLITOROMS:      tax                     ; Service call number
+                jsr OSBYTE_143
+                beq CTR_CLAIMED
                 brk                     ; "254-Bad command" error
                 .byte $fe
                 .asciiz "Bad command"
-CLAIMED:        rts
+CTR_CLAIMED:    rts
+
+
+;*************************************************************************
+;*
+;*  OSBYTE 143: Pass service commands to sideways ROMs
+        ; On entry X=service call number
+        ; Y=any additional parameter
+        ; On entry X=0 if claimed, or preserved if unclaimed
+        ; Y=any returned parameter
+        ; When called internally, EQ set if call claimed
+;* See https://github.com/raybellis/mos120/blob/2e2ff80708e79553643e4b77c947b0652117731b/mos120.s#L10683
+
+OSBYTE_143:		lda	ROM_SELECT          ; Get current ROM number
+			    pha                     ; Save it
+			    txa                     ; Pass service call number to  A
+			    ldx	#$0f                ; Start at ROM 15
+				; Issue service call loop
+NEXT:			inc ROM_TABLE,X         ; Read bit 7 on ROM type table (no ROM has type 254 &FE)
+                dec ROM_TABLE,X         ; 
+                bpl SKIP                ; If not set (+ve result), step to next ROM down
+                stx ROM_SELECT          ; Otherwise, select this ROM, &F4 RAM copy
+                stx ROM_LATCH           ; Page in selected ROM
+                jsr SERVICE_ENTRY       ; Call the ROM's service entry
+                                        ; X and P do not need to be preserved by the ROM
+                tax                     ; On exit pass A to X to chech if claimed
+                beq CLAIMED             ; If 0, service call claimed, reselect ROM and exit
+                ldx ROM_SELECT          ; Otherwise, get current ROM back
+SKIP:           dex                     ; Step to next ROM down
+                bpl NEXT                ; Loop until done ROM 0
+
+CLAIMED:        pla                     ; Get back original ROM number
+                sta	ROM_SELECT          ; Set ROM number RAM copy
+                sta	ROM_LATCH           ; Page in the original ROM
+                txa                     ; Pass X back to A to set zero flag
+                rts                     ; And return
+
 
 
 ; area to store an error message
@@ -119,7 +158,7 @@ NVRDCH:         jmp epRDCH              ; NVRDCH non vectored OSRDCH
 NVWRCH:         jmp epWRCH              ; NVWRCH non vectored OSWRCH
 OSFIND:         jmp (FINDV)             ; OSFIND open or close a file
                 jmp (GBPBV)             ; OSGBPB transfer block to or from a file
-OSBPUT:	        jmp (BPUTV)             ; OSBPUT save a byte to file
+OSBPUT:         jmp (BPUTV)             ; OSBPUT save a byte to file
 OSBGET:         jmp (BGETV)             ; OSBGET get a byte from file
 OSARGS:         jmp (ARGSV)             ; OSARGS read or write file arguments
 OSFILE:         jmp (FILEV)             ; OSFILE read or write a file

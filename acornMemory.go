@@ -6,13 +6,16 @@ import (
 )
 
 type acornMemory struct {
-	data   [65536]uint8
-	memLog bool
+	data      [65536]uint8
+	sideRom   [16][]uint8
+	activeRom uint8
+	memLog    bool
 }
 
 func newAcornMemory(memLog bool) *acornMemory {
 	var a acornMemory
 	a.memLog = memLog
+	a.activeRom = 0xf
 	return &a
 }
 
@@ -24,6 +27,17 @@ func (m *acornMemory) Poke(address uint16, value uint8) {
 		}
 	}
 
+	if romStartAddress <= address && address <= romEndAddress {
+		m.sideRom[m.activeRom][address-romStartAddress] = value
+		return
+	}
+
+	if address == sheila_rom_latch {
+		m.activeRom = value & 0xf
+		if m.memLog {
+			fmt.Printf("[[[EnableROM(%x)]]]\n", m.activeRom)
+		}
+	}
 	m.data[address] = value
 }
 
@@ -35,6 +49,10 @@ func (m *acornMemory) Peek(address uint16) uint8 {
 		if area != "" {
 			fmt.Printf("[[[Peek(%s:%02x) => %02x]]]\n", area, address&0xff, value)
 		}
+	}
+
+	if romStartAddress <= address && address <= romEndAddress {
+		return m.sideRom[m.activeRom][address-romStartAddress]
 	}
 
 	return value
@@ -67,15 +85,16 @@ func (m *acornMemory) loadFirmware(firmFilename string) {
 	}
 }
 
-func (m *acornMemory) loadRom(filename string) {
+func (m *acornMemory) loadRom(filename string, slot uint8) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
 
-	for i := 0; i < len(data); i++ {
-		m.data[romStartAddress+uint16(i)] = data[i]
-	}
+	m.sideRom[slot] = data
+
+	// Cache the ROM type
+	m.data[romTypeTable+uint16(slot)] = data[romTypeByte-romStartAddress]
 }
 
 // helpers

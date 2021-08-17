@@ -119,17 +119,12 @@ func execOSCLI(env *environment) {
 		execOSBYTE(env)
 
 	default:
-		romType := env.mem.Peek(romTypeByte)
-		if (romType & 0x80) != 0 {
-			// The ROM has a service entry. Let's try.
-			env.mem.pokeWord(zpStr, xy)
-			cmd := uint8(4)       // Unrecognized command
-			romSlot := uint8(0xf) // The only supported slot
-			env.cpu.SetAXYP(cmd, romSlot, 1, p)
-			env.cpu.SetPC(procCLITOROM)
-		} else {
-			env.raiseError(254, "Bad command")
-		}
+		// Send to the other ROMS if available.
+		env.mem.pokeWord(zpStr, xy)
+		cmd := uint8(4) // Unrecognized command
+		env.cpu.SetAXYP(cmd, x, 1, p)
+		env.cpu.SetPC(procCLITOROMS)
+		// procCLITOROMS issues a 254-Bad command if the command is not handles by any ROM
 	}
 
 	if msg != "" {

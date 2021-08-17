@@ -18,21 +18,24 @@ Memory map, pages:
 */
 const (
 	zpStr          uint16 = 0x00f2 // OSCLI command line
+	zpROMSelect    uint16 = 0x00f4
 	zpAccumulator  uint16 = 0x00fc
 	zpErrorPointer uint16 = 0x00fd
 
-	vectorBRK uint16 = 0x0202
+	vectorBRK    uint16 = 0x0202
+	romTypeTable uint16 = 0x023a
 
 	// ROM header https://tobylobster.github.io/mos/mos/S-s2.html#SP26
 	userMemBottom             uint16 = 0x0e00
 	romStartAddress           uint16 = 0x8000
+	romEndAddress             uint16 = 0xbfff
 	romServiceEntry           uint16 = 0x8003
 	romTypeByte               uint16 = 0x8006
 	romCopyrightOffsetPointer uint16 = 0x8007
 	romTitleString            uint16 = 0x8009
 
 	// Support code on the firmware. Check firmware.lst when changing firmware.s
-	procCLITOROM uint16 = 0xf000
+	procCLITOROMS uint16 = 0xf000
 
 	// Scratch area for errors in page 0xfa
 	errorArea             uint16 = 0xfa00
@@ -73,6 +76,9 @@ const (
 	epIND2            uint16 = 0xfb1f
 	epIND3            uint16 = 0xfb20
 	epEntryPointsLast uint16 = 0xfb20
+
+	// Fred, Jim and Sheila
+	sheila_rom_latch uint16 = 0xfe30
 
 	maxFiles        = 5
 	errorTodo uint8 = 129 // TODO: find proper error number

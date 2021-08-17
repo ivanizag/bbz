@@ -34,9 +34,22 @@ type environment struct {
 	panicOnErr bool
 }
 
-///////////////////////////
-// File handling
-///////////////////////////
+func newEnvironment(cpuLog bool, apiLog bool, apiLogIO bool, memLog bool, panicOnErr bool) *environment {
+	var env environment
+	env.in = bufio.NewScanner(os.Stdin)
+	env.referenceTime = time.Now()
+	env.timer = 0
+	env.lastTimerUpdate = time.Now()
+	env.mem = newAcornMemory(memLog)
+	env.cpu = core6502.NewNMOS6502(env.mem)
+	env.cpu.SetTrace(cpuLog)
+	env.vdu = newVdu()
+	env.apiLog = apiLog
+	env.apiLogIO = apiLogIO
+	env.panicOnErr = panicOnErr
+	return &env
+}
+
 func (env *environment) getFile(handle uint8) *os.File {
 	i := handle - 1
 	if i < maxFiles && env.file[i] != nil {
@@ -46,10 +59,6 @@ func (env *environment) getFile(handle uint8) *os.File {
 	env.raiseError(222, "Channel")
 	return nil
 }
-
-///////////////////////////
-// Errors and logs
-///////////////////////////
 
 func (env *environment) raiseError(code uint8, msg string) {
 	/*

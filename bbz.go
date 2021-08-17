@@ -1,14 +1,9 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"io"
-	"os"
-	"time"
 	"unicode"
-
-	"github.com/ivanizag/izapple2/core6502"
 )
 
 /*
@@ -16,23 +11,7 @@ import (
 		http://www.sprow.co.uk/bbc/library/sidewrom.pdf
 */
 
-func RunMOSEnvironment(romFilename string, firmFilename string, cpuLog bool, apiLog bool, apiLogIO bool, memLog bool, panicOnErr bool) {
-	// Prepare environment
-	var env environment
-	env.in = bufio.NewScanner(os.Stdin)
-	env.referenceTime = time.Now()
-	env.timer = 0
-	env.lastTimerUpdate = time.Now()
-	env.mem = newAcornMemory(memLog)
-	env.cpu = core6502.NewNMOS6502(env.mem)
-	env.cpu.SetTrace(cpuLog)
-	env.vdu = newVdu()
-	env.apiLog = apiLog
-	env.apiLogIO = apiLogIO
-	env.panicOnErr = panicOnErr
-
-	env.mem.loadFirmware(firmFilename)
-	env.mem.loadRom(romFilename)
+func RunMOS(env *environment) {
 
 	/*
 		Next, the MOS will set the error point at &FD/&FE to point at the version string (or copyright
@@ -55,10 +34,10 @@ func RunMOSEnvironment(romFilename string, firmFilename string, cpuLog bool, api
 
 		if pc == romStartAddress {
 			a, _, _, _ := env.cpu.GetAXYP()
-			env.log(fmt.Sprintf("LANGUAGE(A=%02x)", a))
+			env.log(fmt.Sprintf("LANGUAGE(A=%02x, ROM=%x)", a, env.mem.activeRom))
 		} else if pc == romServiceEntry {
-			a, x, _, _ := env.cpu.GetAXYP()
-			env.log(fmt.Sprintf("SERVICE(CMD=%02x, SLOT=%02x)", a, x))
+			a, _, _, _ := env.cpu.GetAXYP()
+			env.log(fmt.Sprintf("SERVICE(CMD=%02x, ROM=%x)", a, env.mem.activeRom))
 		} else if pc >= entryPoints && pc <= epEntryPointsLast {
 			a, x, y, p := env.cpu.GetAXYP()
 
@@ -75,7 +54,7 @@ func RunMOSEnvironment(romFilename string, firmFilename string, cpuLog bool, api
 				env.notImplemented(fmt.Sprintf("OSFSC(A=0x%02x,X=0x%02x,y=0x%02x)", a, x, y))
 
 			case epFIND: // OSFIND
-				execOSFIND(&env)
+				execOSFIND(env)
 
 			case epGBPB: // OSGBPB
 				/*
@@ -133,10 +112,10 @@ func RunMOSEnvironment(romFilename string, firmFilename string, cpuLog bool, api
 				env.log(fmt.Sprintf("OSBGET(FILE=%v)=0x%02x,EOF=%v", y, value, eof))
 
 			case epARGS: // OSARGS
-				execOSARGS(&env)
+				execOSARGS(env)
 
 			case epFILE: // OSFILE: Load or save a complete file. BPUG page 446
-				execOSFILE(&env)
+				execOSFILE(env)
 
 			case epRDCH: // OSRDCH
 				/*
@@ -170,13 +149,13 @@ func RunMOSEnvironment(romFilename string, firmFilename string, cpuLog bool, api
 				env.logIO(fmt.Sprintf("OSWRCH(0x%02x, '%v')", a, ch))
 
 			case epWORD: // OSWORD
-				execOSWORD(&env)
+				execOSWORD(env)
 
 			case epBYTE: // OSBYTE
-				execOSBYTE(&env)
+				execOSBYTE(env)
 
 			case epCLI: // OSCLI
-				execOSCLI(&env)
+				execOSCLI(env)
 
 			case epBRK: // BRKV
 				// The selected ROM has not defined a custom BRKV
