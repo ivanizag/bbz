@@ -23,14 +23,16 @@ References:
 - [The MOS Reassembly for the BBC Micro](https://tobylobster.github.io/mos/mos/index.html)
 
 ## Features
-- Some of the MOS entrypoints and VDU control codes are defined.
 - Can run BBC BASIC and most of the language ROMs.
 - Can load up to 16 sideways ROMs.
+- Readline like input with persistent history (`-r` parameter)
+- Some of the MOS entrypoints and VDU control codes are defined.
 - Saves and loads files from the host filesystem.
 - Does some of the mode 7 text coloring using ANSI escape codes on the terminal. Try `VDU 65,129,66,130,67,132,68,135,69,13,10` on BBC BASIC.
 - OSCLI comands suported:
   - *QUIT: exit
   - *HELP
+  - *BASIC
   - *FX
   - *HOST cmd: execute a command on the host OS. Example: `*HOST ls -la`
 
@@ -50,6 +52,7 @@ AvaIlable flags (to put before the ROM filename if present):
   -c	dump to the console the CPU execution operations
   -m	dump to the console the MOS calls excluding console I/O calls
   -p	panic on not implemented MOS calls
+  -r	use readline like input with history
   -s	dump to the console the accesses to Fred, Jim or Sheila
   -rom0 string
     	filename for rom 0 (slot 0xf)

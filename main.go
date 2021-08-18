@@ -29,7 +29,10 @@ func main() {
 		"p",
 		false,
 		"panic on not implemented MOS calls")
-
+	readline := flag.Bool(
+		"r",
+		false,
+		"use readline like input with history")
 	roms := make([]*string, 16)
 	for i := 0; i < 16; i++ {
 		roms[i] = flag.String(
@@ -55,7 +58,9 @@ func main() {
 		(*traceMOS) || (*traceMOSFull),
 		*traceMOSFull,
 		*traceMemory,
-		*panicOnErr)
+		*panicOnErr,
+		*readline)
+	defer env.close()
 
 	env.mem.loadFirmware()
 

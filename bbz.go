@@ -110,7 +110,7 @@ func RunMOS(env *environment) {
 					After an OSRDCH call: C=0 indicates that a valid character has
 					been read; C=1 flags an error condition, A contains an error number.
 				*/
-				ch, stop := env.in.readChar()
+				ch, stop := env.con.readChar()
 				if stop {
 					env.stop = true
 					return

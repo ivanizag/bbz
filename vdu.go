@@ -3,9 +3,9 @@ package main
 import "fmt"
 
 type vdu struct {
+	con   console
 	queue []uint8
-
-	mode uint8
+	mode  uint8
 
 	// Mode 0-6
 	textColour  uint8
@@ -25,7 +25,7 @@ type vdu struct {
 
 var argsNeeded [256]int
 
-func newVdu() *vdu {
+func newVdu(con console) *vdu {
 	// Init args needed array, 0 for all except:
 	argsNeeded[1] = 1
 	argsNeeded[17] = 1
@@ -41,6 +41,7 @@ func newVdu() *vdu {
 	argsNeeded[31] = 2
 
 	var v vdu
+	v.con = con
 	// Mode 7 on startup
 	v.mode = 7
 	v.m7fgColour = 7 // white
@@ -478,7 +479,7 @@ func (v *vdu) writeInternal(cmd uint8, q []uint8) {
 	}
 
 	if out != "" && !v.ignore {
-		fmt.Print(out)
+		v.con.write(out)
 	}
 }
 

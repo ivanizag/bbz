@@ -12,7 +12,7 @@ type environment struct {
 	cpu *core6502.State
 	mem *acornMemory
 	vdu *vdu
-	in  input
+	con console
 
 	// clock, used by OSWORD01 and 02
 	referenceTime time.Time
@@ -33,20 +33,28 @@ type environment struct {
 	panicOnErr bool
 }
 
-func newEnvironment(cpuLog bool, apiLog bool, apiLogIO bool, memLog bool, panicOnErr bool) *environment {
+func newEnvironment(cpuLog bool, apiLog bool, apiLogIO bool, memLog bool, panicOnErr bool, readline bool) *environment {
 	var env environment
-	env.in = newInputSimple()
+	if readline {
+		env.con = newConsoleLiner()
+	} else {
+		env.con = newConsoleSimple()
+	}
 	env.referenceTime = time.Now()
 	env.timer = 0
 	env.lastTimerUpdate = time.Now()
 	env.mem = newAcornMemory(memLog)
 	env.cpu = core6502.NewNMOS6502(env.mem)
 	env.cpu.SetTrace(cpuLog)
-	env.vdu = newVdu()
+	env.vdu = newVdu(env.con)
 	env.apiLog = apiLog
 	env.apiLogIO = apiLogIO
 	env.panicOnErr = panicOnErr
 	return &env
+}
+
+func (env *environment) close() {
+	env.con.close()
 }
 
 func (env *environment) getFile(handle uint8) *os.File {
