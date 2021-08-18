@@ -110,13 +110,12 @@ func RunMOS(env *environment) {
 					After an OSRDCH call: C=0 indicates that a valid character has
 					been read; C=1 flags an error condition, A contains an error number.
 				*/
-				if !env.in.Scan() {
+				ch, stop := env.in.readChar()
+				if stop {
+					env.stop = true
 					return
 				}
-				line := env.in.Text()
-				// TODO: capture keystrokes. We will just get the first chat of the line
-				// and ignore the rest.
-				ch := line[0]
+
 				pOut := p &^ 1 // Clear carry
 				env.cpu.SetAXYP(ch, x, y, pOut)
 

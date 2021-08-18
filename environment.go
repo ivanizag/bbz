@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"time"
@@ -13,7 +12,7 @@ type environment struct {
 	cpu *core6502.State
 	mem *acornMemory
 	vdu *vdu
-	in  *bufio.Scanner
+	in  input
 
 	// clock, used by OSWORD01 and 02
 	referenceTime time.Time
@@ -36,7 +35,7 @@ type environment struct {
 
 func newEnvironment(cpuLog bool, apiLog bool, apiLogIO bool, memLog bool, panicOnErr bool) *environment {
 	var env environment
-	env.in = bufio.NewScanner(os.Stdin)
+	env.in = newInputSimple()
 	env.referenceTime = time.Now()
 	env.timer = 0
 	env.lastTimerUpdate = time.Now()

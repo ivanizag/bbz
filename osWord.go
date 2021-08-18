@@ -21,11 +21,11 @@ func execOSWORD(env *environment) {
 			line. C not equal to zero indicates that an escape condition terminated
 			entry. Y is set to the length of the line, excluding the CR if C=0.
 		*/
-		if !env.in.Scan() {
+		line, stop := env.in.readline()
+		if stop {
 			env.stop = true
 			return
 		}
-		line := env.in.Text()
 
 		// TODO: check max size
 		buffer := env.mem.peekWord(xy)
