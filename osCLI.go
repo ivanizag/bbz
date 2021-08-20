@@ -7,6 +7,35 @@ import (
 	"strings"
 )
 
+/*
+	Start commands. The order is relevant to find the proper shortcuts.
+	Example: *L. is *LOAD and not *LINE
+	See:
+		https://github.com/raybellis/mos120/blob/2e2ff80708e79553643e4b77c947b0652117731b/mos120.s#L6839
+		BBC Microcomputer Advanced User Guide, chapter 2.
+*/
+var cliCommands = []string{
+	"CAT",
+	"FX",
+	"BASIC",
+	"CODE",
+	"EXEC",
+	"HELP",
+	"HOST", // Added for bbz
+	"KEY",
+	"LOAD",
+	"LINE",
+	"MOTOR",
+	"OPT",
+	"QUIT", // Added for bbz
+	"RUN",
+	"ROM",
+	"SAVE",
+	"SPOOL",
+	"TAPE",
+	"TV",
+}
+
 func execOSCLI(env *environment) {
 	_, x, y, p := env.cpu.GetAXYP()
 
@@ -18,75 +47,94 @@ func execOSCLI(env *environment) {
 		carriage return character (ASCII &0D/13)
 	*/
 	xy := uint16(x) + uint16(y)<<8
-	line := env.mem.getString(xy, 0x0d)
-	fields := strings.Fields(line)
-	command := strings.ToUpper(fields[0])
-	// The command-line interpreter does not distinguish between upper and lower case characters in the command name
-	command = strings.ToUpper(command)
-	params := fields[1:]
-	handled := false
+	lineNotTerminated := env.mem.getString(xy, 0x0d)
+	line := lineNotTerminated + "\r"
+	pos := 0
 
-	if command == "*" && len(params) > 0 {
-		// There are spaces between the * and the command
-		command = "*" + strings.ToUpper(params[0])
-		params = params[1:]
+	for line[pos] == ' ' { // Remove initial spaces
+		pos++
+	}
+	if line[pos] == '*' { // Skip '*' if present
+		pos++
+	}
+	for line[pos] == ' ' { // Remove spaces after '*'
+		pos++
+	}
+	if line[pos] == '|' || line[pos] == '\r' { // Ignore "*|" or standalone "*"
+		return
+	}
+	if line[pos] == '/' { // Send "*/[...]" to filling system
+		env.log("*/[...] not implemented")
+		return
 	}
 
-	if strings.HasPrefix(command, "*FX") {
-		// *FX123 should be treated as *FX 123
-		fxNumber := command[3:]
-		if len(fxNumber) != 0 {
-			command = "*FX"
-			params = append([]string{fxNumber}, params...)
+	// Extract command
+	command := ""
+	for ; !strings.ContainsAny(string(line[pos]), " .0123456789\r"); pos++ {
+		command += string(line[pos])
+	}
+	command = strings.ToUpper(command) // Commands are case insensitive
+	if line[pos] == '.' {
+		// Expand . shortcut
+		for _, candidate := range cliCommands {
+			if strings.HasPrefix(candidate, command) {
+				command = candidate // Full command found
+				break
+			}
 		}
+		pos++
 	}
-
-	if strings.HasPrefix(command, "*|") {
-		// *|123 should be treated as *| 123
-		fxNumber := command[3:]
-		if len(fxNumber) != 0 {
-			command = "*|"
-			params = append([]string{fxNumber}, params...)
-		}
+	for line[pos] == ' ' { // Remove spaces after command
+		pos++
 	}
+	args := line[pos:]
+	args = strings.TrimRight(args, " \r")
+	unhandled := false
 
-	msg := ""
+	env.log(fmt.Sprintf("OSCLI('%s', CMD='%s')", lineNotTerminated, command))
+
 	switch command {
+	case "CAT":
+		// TODO
+		fmt.Println("\n<<directory placeholder>>")
 
-	case "*|":
-		/*
-			An operating system command-line with a ‘|’, string escape
-			character, as its first non-blank character will be ignored by the
-			operating system. This could be used to put comment lines into
-			a series of operating system commands placed in an EXEC file
-			for example.
-		*/
-		// do nothing
-		handled = true
+	case "FX":
+		params := strings.Split(args, ",")
+		if len(params) == 0 || len(params) > 3 {
+			env.raiseError(254, "Bad Command")
+			break
+		}
+		argA, err := strconv.Atoi(strings.TrimSpace(params[0]))
+		if err != nil || (argA&0xff) != argA {
+			env.raiseError(254, "Bad Command")
+			break
+		}
+		execOSCLIfx(env, uint8(argA), params[1:])
 
-	case "*H.":
-		fallthrough
-	case "*HELP":
-		msg = "bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz"
-		handled = true
+	case "BASIC":
+		// Runs the first language ROM with no service entry
+		unhandled = true
+		for slot := 0xf; slot >= 0; slot-- {
+			romType := env.mem.data[romTypeTable+uint16(slot)]
+			if romType&0b1100_0000 == 0b0100_0000 { // bit 7 clear, bit 6 set
+				env.initLanguage(uint8(slot))
+				unhandled = false
+				break
+			}
+		}
 
+	case "CODE":
+		execOSCLIfx(env, 0x88, strings.Split(args, ","))
+	//case "EXEC":
+	case "HELP":
+		fmt.Println("\nbbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz")
 		// TODO: multiple ROMS: service call 9 after the MOS message
 
-	case "*.":
-		fallthrough
-	case "*CAT":
-		// TODO
-		msg = "<<directory placeholder>>"
-		handled = true
-
-	case "*QUIT":
-		env.stop = true
-		handled = true
-
-	case "*HOST":
-		if len(params) == 0 {
+	case "HOST":
+		if len(args) == 0 {
 			env.raiseError(errorTodo, "Command missing for *HOST")
 		} else {
+			params := strings.Split(args, " ")
 			cmd := exec.Command(params[0], params[1:]...)
 			stdout, err := cmd.Output()
 			if err != nil {
@@ -94,50 +142,31 @@ func execOSCLI(env *environment) {
 			}
 			fmt.Println(string(stdout))
 		}
-		handled = true
 
-	case "*FX":
-		// Parse  *FX args
-		if len(params) == 0 || len(params) > 3 {
-			break
-		}
-		argA, err := strconv.Atoi(params[0])
-		if err != nil || (argA&0xff) != argA {
-			break
-		}
-		argX := 0
-		if len(params) >= 2 {
-			argX, err = strconv.Atoi(params[1])
-			if err != nil || (argX&0xff) != argX {
-				break
-			}
-		}
-		argY := 0
-		if len(params) >= 3 {
-			argY, err = strconv.Atoi(params[2])
-			if err != nil || (argY&0xff) != argY {
-				break
-			}
-		}
+	// case "KEY":
+	// case "LOAD":
+	// case "LINE":
+	case "MOTOR":
+		execOSCLIfx(env, 0x89, strings.Split(args, ","))
+	case "OPT":
+		execOSCLIfx(env, 0x8b, strings.Split(args, ","))
+	case "QUIT":
+		env.stop = true
+	// case "RUN":
+	case "ROM":
+		execOSCLIfx(env, 0x8d, strings.Split(args, ","))
+	// case "SAVE":
+	// case "SPOOL":
+	case "TAPE":
+		execOSCLIfx(env, 0x8c, strings.Split(args, ","))
+	case "TV":
+		execOSCLIfx(env, 0x90, strings.Split(args, ","))
 
-		// Send to OSBYTE
-		env.cpu.SetAXYP(uint8(argA), uint8(argX), uint8(argY), p)
-		execOSBYTE(env)
-		handled = true
-
-	case "*BASIC":
-		// Runs the first language ROM with no service entry
-		for slot := 0xf; slot >= 0; slot-- {
-			romType := env.mem.data[romTypeTable+uint16(slot)]
-			if romType&0b1100_0000 == 0b0100_0000 { // bit 7 clear, bit 6 set
-				env.initLanguage(uint8(slot))
-				handled = true
-				break
-			}
-		}
+	default:
+		unhandled = true
 	}
 
-	if !handled {
+	if unhandled {
 		// Send to the other ROMS if available.
 		env.mem.pokeWord(zpStr, xy)
 		cmd := uint8(4) // Unrecognized command
@@ -145,9 +174,30 @@ func execOSCLI(env *environment) {
 		env.cpu.SetPC(procCLITOROMS)
 		// procCLITOROMS issues a 254-Bad command if the command is not handled by any ROM
 	}
+}
 
-	if msg != "" {
-		fmt.Printf("\n%s\n", msg)
+func execOSCLIfx(env *environment, argA uint8, params []string) {
+	argX := 0
+	if len(params) >= 2 {
+		var err error
+		argX, err = strconv.Atoi(strings.TrimSpace(params[0]))
+		if err != nil || (argX&0xff) != argX {
+			env.raiseError(254, "Bad Command")
+			return
+		}
 	}
-	env.log(fmt.Sprintf("OSCLI('%s %s')", command, strings.Join(params, " ")))
+	argY := 0
+	if len(params) >= 3 {
+		var err error
+		argY, err = strconv.Atoi(strings.TrimSpace(params[2]))
+		if err != nil || (argY&0xff) != argY {
+			env.raiseError(254, "Bad Command")
+			return
+		}
+	}
+
+	// Send to OSBYTE
+	_, _, _, p := env.cpu.GetAXYP()
+	env.cpu.SetAXYP(uint8(argA), uint8(argX), uint8(argY), p)
+	execOSBYTE(env)
 }
