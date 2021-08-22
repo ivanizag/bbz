@@ -1,0 +1,39 @@
+/* Section commented out in case it is not needed
+
+SECTION "OPTION"
+
+// contains GETBYTE,PACKSTRING,PUTBYTE,UNPACKSTRING
+// these standard procedures are unnecessary for new code.
+// The remainder are easily provided by the % operator.
+// Modified 8/7/82 by E.Allen for BBC Micro
+
+
+GET "LIBHDR"
+GET "SYSHDR"
+// if OPTION is a separate segment it is necessary to allocate
+// Globals for the procedures required,  and declare or
+// reference them here.
+
+*/
+
+// if "OPTION" is included as local procedures within a section 
+// the next LET may need to be changed to AND.
+
+
+LET GETBYTE(S, I) = S%I
+
+
+AND PACKSTRING(V, S) = VALOF
+    $( LET N = V!0 & 255
+       LET I = N/2
+       FOR P = 0 TO N DO S%P:=V!P
+       IF (N&1)=0 DO S%(N+1) := 0
+       RESULTIS I  $)
+
+
+AND PUTBYTE(S, I, B) BE S%I := B
+
+
+AND UNPACKSTRING(S, V) BE
+         FOR I = 0 TO S%0 DO V!I := S%I
+

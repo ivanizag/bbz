@@ -1,0 +1,19 @@
+// Header file for EXAMPLE.
+
+get "libhdr"
+
+manifest $(
+ug = firstfreeglobal    // to save typing
+         $)
+
+global $(
+playtune:ug
+voltmeter:ug+1
+txtcursor:ug+2
+hidecursor:ug+3
+colour:ug+4
+gcol:ug+5
+plot:ug+6
+       $)
+
+

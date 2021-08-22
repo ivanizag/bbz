@@ -1,0 +1,41 @@
+SECTION "ENCODE"
+GET "LIBHDR"
+
+MANIFEST $( avsize = 20 $)
+
+LET start() BE
+$( LET ch = ?
+   LET infile, outfile = ?, ?
+   LET argvec = VEC avsize
+
+   IF RDARGS("FROM/A,TO/A", argvec, avsize) = 0 THEN
+      STOP(11)  // invalid arguments
+
+   infile := FINDINPUT(argvec!0)
+   IF infile = 0 THEN
+      STOP(RESULT2) // invalid in file
+   outfile := FINDOUTPUT(argvec!1)
+   IF outfile = 0 THEN
+      STOP(RESULT2) // invalid out file
+
+   SELECTINPUT(infile)
+   SELECTOUTPUT(outfile)
+
+   ch := RDCH()
+   WHILE ch NE endstreamch DO
+   $( WRCH( codechar(ch) )
+      ch := RDCH()
+   $)
+
+   ENDREAD()  // not strictly necessary
+   ENDWRITE() // but good practice
+$)
+
+AND codechar(char) = VALOF
+$( TEST 'A' <= char <= 'Z' THEN
+      char := 'A' + 'Z' - char
+   ELSE IF 'a' <= char <= 'z' THEN
+      char := 'a' + 'z' - char
+   RESULTIS char
+$)
+

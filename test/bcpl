@@ -1,0 +1,24 @@
+$ go run ../../*.go ../BCPL-7.0.rom 
+bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz
+(tip: uppercase is usually needed)
+
+BCPL
+!TYPE TEST.BCPL
+SECTION "TEST"
+GET "LIBHDR"
+LET start() BE
+WRITES("Hello world*N")
+
+!BCPL TEST.BCPL TEST.CINT
+
+BCPL - RCP V2.2
+Section TEST
+Text read
+RCP CINTCODE generation
+CINTCODE size = 24 words
+
+!SAVE TEST.CINT
+!TEST.CINT
+Hello world
+!
+

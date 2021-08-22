@@ -1,0 +1,139 @@
+section "EXMP2"
+
+get "exmphdr"
+
+// This section of EXAMPLE contains the procedure to play a tune.
+
+
+// PLAYTUNE uses the ENVELOPE and SOUND procedures to play a simple tune. The
+// tune is stored in a string. Each note is represented by 3 characters - the
+// octave number, the note (a-g) and +, - or space for sharp, flat or
+// natural. The note is in lower case for a quaver and upper case for a
+// crotchet. The first note in a bar is preceded by '!'. The string is assumed
+// to be valid.
+
+let playtune() be
+$( let envnumber = 1          // envelope to use
+   let pitch = ?              // pitch parameter for SOUND
+   let sbuffsz = adval(-6)    // size of sound buffer 1 (number of free slots)
+   let soundvec = vec 3       // parameter for SOUND
+   let tune = "!3b-*
+              *!4e-4e-4e-4e-4e-4e-*
+              *!4d 4f 4b-4b-4a-4f *
+              *!4e-4e-4e-4e-4d 4e-*
+              *!4f 3b-3b-3B-3b-*
+              *!4e-4e-4e-4e-4e-4e-*
+              *!4d 4f 4b-4b-4a-4f *
+              *!4g 4b-4e-4f 4e-4f *
+              *!4e-3e-3e-3E-"
+
+   // NOTEVAL is a table of the pitch for the notes in one octave,
+   // starting with A and taking C as 0.
+
+   let noteval = table 36, 44, 0, 8, 16, 20, 28
+
+   // Set up screen display then set up envelopes. Envelope 1
+   // is for quaver. Envelope 2 is for crotchet. Envelope 3
+   // is for accented quaver at start of bar. (There are no
+   // accented crotchets.)
+
+   dodisplay()
+   envelope(table 1, 2, 0, 0, 0, 0, 0, 0, 30,  -2, -127, -127, 120, 105)
+   envelope(table 2, 2, 0, 0, 0, 0, 0, 0, 60,  -6,  -30, -127, 120,  60)
+   envelope(table 3, 2, 0, 0, 0, 0, 0, 0, 64, -10,  -65, -127, 126,  59)
+
+   soundvec!0 := 1         // initialise channel number
+
+   // Process each character in the tune string.
+
+   for i = 1 to tune%0 do
+   $( let ch = tune%i
+
+      test '1' <= ch <= '7' then
+
+      // Octave number - initialise pitch.
+         pitch := 48*(ch-'0') - 91
+
+      else test 'a' <= ch <= 'g' then
+
+      // Note (quaver) - update pitch and leave envelope as 1 (or 3).
+         pitch := pitch + noteval!(ch-'a')
+
+      else test 'A' <= ch <= 'G' then
+
+      // Note (crotchet) - update pitch and select envelope 2.
+      $( pitch := pitch + noteval!(ch-'A')
+         envnumber := 2
+      $)
+
+      else test ch = '!' then
+
+      // Start of bar so set envelope 3 for following note.
+         envnumber := 3
+
+      else
+
+      // Assume '+', '-' or space so adjust pitch for sharp or
+      // flat if appropriate then play the note.
+      $( test ch = '+' then
+            pitch := pitch + 4
+         else if ch = '-' then
+            pitch := pitch - 4
+
+         soundvec!1 := envnumber
+         soundvec!2 := pitch
+         soundvec!3 := envnumber = 2 -> 6, 3 // duration (longer for crotchet)
+         sound(soundvec)
+
+         envnumber := 1    // reset envelope number to quaver.
+      $)
+   $)                      // back for next character
+
+   // All notes put in buffer. Wait until they have been played
+   // before returning to the menu.
+
+   until adval(-6) = sbuffsz loop      // wait for tune to end
+$)
+
+
+// DISPNOTE displays a note symbol in flashing white at a specified x position.
+
+and dispnote(x) be
+$( let chartab = table 160,160,234,228,   // 4x5 array of graphics chars
+                       141,160,234,160,   // double height
+                       141,160,234,160,
+                       160,248,254,160,
+                       160,181,234,160,
+                       160,171,167,160
+   for i=0 to 5 do
+   $( txtcursor(x, 3+i)    // position character on line 3
+      wrbin(136)           // flashing
+      wrbin(151)           // graphic white
+      for j=4*i to 4*i+3 do
+         wrbin(chartab!j)
+      wrbin(137)           // steady
+   $)
+$)
+
+
+// DODISPLAY sets up the display.
+
+and dodisplay() be
+$( mode(7)
+   for i = 0 to 1 do       // double height title
+   $( txtcursor(10, i+4)
+      writes("*x8D*x81*x9D*x86M U S I C  *x9C")
+   $)
+   dispnote(1); dispnote(29)        // note symbols
+   txtcursor(1, 10)
+   for i = 0 to 14 do
+   $( wrbin(129 + (i rem 3))        // select one of three colours
+      writes("MUSIC")
+      wrbin(10)                     // cursor down then 4 left
+      for j = 1 to 4 do wrbin(8)
+   $)
+   txtcursor(0, 23)        // leave cursor at end of screen
+$)
+.
+
+

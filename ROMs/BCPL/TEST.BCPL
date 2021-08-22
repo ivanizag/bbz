@@ -1,0 +1,5 @@
+SECTION "TEST"
+GET "LIBHDR"
+LET start() BE
+	WRITES("Hello world*N")
+

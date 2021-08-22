@@ -1,0 +1,97 @@
+section "EXMP1"
+
+needs "sound"     // sections from LIB
+needs "envelope"
+needs "adval"
+needs "vdu"
+needs "time"
+
+get "exmphdr"     // header file
+
+// This section of EXAMPLE contains START plus various
+// utility routines.
+
+let start() be
+$( // Select teletext mode and write double-height cyan heading.
+
+   mode(7)
+   for i = 0 to 1 do    // write 2 identical lines (double height)
+      writes("*x86*x8D           E X A M P L E*n")
+                        // '*x86' gives character 86 (hex)
+
+   // Write list of options in white.
+
+   writes("*nEnter*X88T*X89(Tune)*n")
+   writes(  "     *X88V*X89(Voltmeter)*n")
+   writes(  "     *X88X*X89(Exit)*n*n")
+   writes(  "then press*x88RETURN")
+
+   $( // Enter loop to get valid input. Discard any characters left
+      // over from previous input, blank out previous input then prompt.
+
+      while testflags(more.input) do rdch()
+      txtcursor(0, 12)
+      for i = 1 to 40 do wrch('*S')
+      txtcursor(0, 12)
+      writes("? ")
+
+      // Process the input, taking notice of the first character only.
+
+      switchon capch(rdch()) into
+      $( case 'T':
+            playtune()
+            break // jumps out of inner repeat loop
+
+         case 'V':
+            voltmeter()
+            break
+
+         case 'X':
+            wrbin(12)   // clear screen
+            stop(0)     // and exit
+      $)
+
+      // If input invalid issue a flashing magenta error message and
+      // loop back to re-issue prompt.
+
+      txtcursor(0, 15)
+      writes("*x85*x88Please enter T, V or X*n")
+   $) repeat
+
+   // Come here on return from PLAYTUNE or VOLTMETER. Repeat the whole
+   // procedure.
+
+$) repeat
+
+
+// COLOUR sets the text colour (not in mode 7).
+
+and colour(col) be
+   vdu("17,%", col)
+
+
+// GCOL sets the graphics colour (not in mode 7).
+
+and gcol(gmode, col) be
+   vdu("18,%,%", gmode, col)
+
+
+// HIDECURSOR conceals the cursor.
+
+and hidecursor() be
+   vdu("23,1,0;0;0;0;")
+
+
+// PLOT has the same effect as the BASIC command PLOT.
+
+and plot(k, x, y) be
+   vdu("25,%,%;%;", k, x, y)
+
+
+// TXTCURSOR positions the text cursor.
+
+and txtcursor(x, y) be
+   vdu("31,%,%", x, y)
+
+.        // '.' marks end of section
+

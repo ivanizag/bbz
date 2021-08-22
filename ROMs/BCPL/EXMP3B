@@ -1,0 +1,136 @@
+section "EXMP3"
+
+get "exmphdr"
+
+// This section of EXAMPLE contains the procedure to
+// display the voltages of the four analogue inputs.
+
+manifest $( col.red   = 0  // logical colours used
+            col.white = 1
+            col.blue  = 2
+            col.cyan  = 3
+         $)
+
+// VOLTMETER displays the voltages read from the four analogue input channels
+// as vertical bars.
+
+let voltmeter() be
+$( let prevpos = vec 4        // previous position of top of bar
+
+// Select screen mode 5.
+
+   unless mode(5) then
+   $( let endt = time() + 500   // show message for 5 seconds
+      if endt < 0 then endt := endt + #X8000
+                                // allow for wrap-round
+      wrbin(12)                 // clear screen
+      writes("Cannot select mode 5.*N")
+      writes("When '!' appears type:*n")
+      writes("*x88SHUFFLE*x89*nand press*x88RETURN*n")
+      writes("then re-run this program.*n")
+      until time() = endt loop
+      stop(0)                    // exit
+   $)
+
+   // Define logical colours.
+
+   vdu("19,%,1;0;", col.red)
+   vdu("19,%,7;0;", col.white)
+   vdu("19,%,4;0;", col.blue)
+   vdu("19,%,6;0;", col.cyan)
+
+   // Display fixed text etc.
+
+   dofixed()
+   for i=1 to 4 do prevpos!i := 224  // initialise to 0v.
+
+   // Loop round each channel in turn, reading the value and
+   // updating the display.
+
+   $( for i = 1 to 4 do
+
+      // Value is read as number between 0 (=0v) and 65520 (=1.8v).
+      // Convert it to y co-ord of top of bar (224=0v; 685=1.8v).
+      // When converting shift value right to avoid values > 32767
+      // being treated as negative.
+
+      $( let endpos = 224 + muldiv(adval(i) >> 1, 462, 32760)
+         let xpos = 256*i + 132      // 'x' for left of bar
+
+         // If new bar is same length as before do nothing. If new bar is
+         // shorter then erase top of existing bar by drawing it in the
+         // background colour. If new bar is longer draw the extra bit only.
+
+         unless endpos = prevpos!i do
+            drawbar(xpos, endpos, prevpos!i,
+                    (endpos < prevpos!i -> col.blue, col.cyan)
+                   )
+
+         prevpos!i := endpos        // remember new position
+
+         // See if DELETE was pressed and return if so. (*FX129 with
+         // -ve parameter checks if specied key is pressed.)
+
+         if opsys(129, -90, #xFF) ~= 0 return
+      $)
+   $) repeat
+$)
+
+
+// DOFIXED sets up the fixed part of the display.
+
+and dofixed() be
+$( hidecursor()
+
+   // Set up a red background then define a graphics window and
+   // initialise it to blue.
+
+   colour(128+col.red)
+   wrbin(12)         // clear text screen
+   vdu("24,256;224;1279;1023;")
+   gcol(0, 128+col.blue)
+   wrbin(16)         // clear graphics area
+
+   colour(col.white) // write text in white
+   txtcursor(6, 0); writes("VOLTMETER")
+   txtcursor(1, 2); wrch('V')
+   for i = 0 to 5 do
+   $( txtcursor(0, 24-4*i)    // write scale in format x.x
+      writef("%i1.%i1", (5*i)/10, (5*i) rem 10)
+   $)
+   txtcursor(0, 27); writes("CHN:  1   2   3   4")
+   txtcursor(1, 31); writes("Hit DELETE to exit")
+
+   plotgrid()
+$)
+
+
+// DRAWBAR draws or deletes a bar. Comments assume XPOS is
+// the x co-ord of the left of the bar ,YLOW is the y co-ord
+// of the bottom, YHI is the y co-ord of the top and COL is
+// the colour. In fact YLOW and YHI may be reversed.
+
+and drawbar(xpos, ylow, yhi, col) be
+$( gcol(0, col)      // select colour
+   plot(4, xpos, ylow)     // move to bottom left
+   plot(5, xpos+64, ylow)  // draw to bottom right
+   plot(85, xpos+64, yhi)  // fill triangle to top right
+
+   plot(5, xpos, yhi)      // draw to top left
+   plot(85, xpos, ylow)    // fill triangle to bottom left
+
+   plotgrid()        // redraw grid in case lines were overwritten
+$)
+
+
+// PLOTGRID plots the horizontal lines every 0.5 volots.
+
+and plotgrid() be
+$( gcol(0, col.white) // write graphics in white
+   for i = 0 to 5 do
+   $( plot(4, 256, 224+i*128) // move to left endpoint
+      plot(17, 1024, 0)       // draw dotted to right endpoint
+   $)
+$)
+.
+
