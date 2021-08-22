@@ -1,0 +1,37 @@
+ROM2 has the command line interpreter
+ROM1 has the compiler? May be invoked via OSBYTEa3(x=c0)
+
+
+$ go run ../../*.go -rom0 ../Pascal-1.10-2.rom -m
+bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz
+(tip: uppercase is usually needed)
+
+Pascal
+[[[OSBYTEfd('Read hard/soft break',X=0x00,Y=0x03) => (X=0x02,Y=0x02)]]]
+[[[OSBYTE00('Identify Operating System version',X=0x01,Y=0x02) => (X=0x00,Y=0x02)]]]
+[[[OSBYTE82('Read machine high order address',X=0x00,Y=0xff) => (X=0xff,Y=0xff)]]]
+[[[OSBYTE83('Read bottom of user mem',X=0xff,Y=0xff) => (X=0x00,Y=0x0e)]]]
+[[[OSBYTE84('Read top of user mem',X=0x00,Y=0x0e) => (X=0x00,Y=0x80)]]]
+%*HOST cat test.pas
+[[[OSWORD00('read line',BUF=0x051a,range=20-ff, maxlen=255) => '*HOST cat test.pas']]]
+[[[OSCLI('*HOST cat test.pas', CMD='HOST')]]]
+program charSet(output);
+{ Prints the ASCII character set }
+var
+   ch : char;
+
+begin
+   for ch:=chr(32) to chr(126) do
+      write(ch);
+    writeln
+end.
+
+%COMPILE test.pas
+[[[OSWORD00('read line',BUF=0x051a,range=20-ff, maxlen=255) => 'COMPILE test.pas']]]
+[[[OSCLI('fx163,192,0', CMD='FX')]]]
+[[[Not implemented: OSBYTEa3(X=0xc0,Y=0x00)]]]
+[[[RAISE(ERR=fe, 'Bad command')]]]
+[[[BREAK(ERR=fe, 'Bad command')]]]
+
+Bad command
+%
