@@ -17,6 +17,9 @@ Memory map, pages:
 
 */
 const (
+	zpA            uint16 = 0x00ef
+	zpX            uint16 = 0x00f0
+	zpY            uint16 = 0x00f1
 	zpStr          uint16 = 0x00f2 // OSCLI command line
 	zpROMSelect    uint16 = 0x00f4
 	zpAccumulator  uint16 = 0x00fc
@@ -35,11 +38,19 @@ const (
 	romTitleString            uint16 = 0x8009
 
 	// Support code on the firmware. Check firmware.lst when changing firmware.s
-	procCLITOROMS uint16 = 0xf000
+	procServiceRoms uint16 = 0xf000
+
+	// See http://beebwiki.mdfs.net/Service_calls
+	//serviceNoOperation uint8 = 0
+	serviceOSCLI  uint8 = 4
+	serviceOSBYTE uint8 = 7
+	//serviceOSWORD      uint8 = 8
+	//serviceHELP        uint8 = 9
 
 	// Scratch area for errors in page 0xfa
 	errorArea             uint16 = 0xfa00
 	errorMessageMaxLength int    = 100
+	errorTodo             uint8  = 129 // TODO: find proper error number
 
 	// Entry points for host interception in page 0xfb
 	entryPoints       uint16 = 0xfb00
@@ -80,6 +91,5 @@ const (
 	// Fred, Jim and Sheila
 	sheila_rom_latch uint16 = 0xfe30
 
-	maxFiles        = 5
-	errorTodo uint8 = 129 // TODO: find proper error number
+	maxFiles = 5
 )

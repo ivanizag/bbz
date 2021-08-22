@@ -37,7 +37,7 @@ func execOSWORD(env *environment) {
 		env.cpu.SetAXYP(1, x, uint8(len(line)), pOut)
 		env.vdu.mode7Reset()
 
-		env.log(fmt.Sprintf("OSWORD00('read line',BUF=0x%04x,range=%02x-%02x, maxlen=%v)='%s'",
+		env.log(fmt.Sprintf("OSWORD00('read line',BUF=0x%04x,range=%02x-%02x, maxlen=%v) => '%s'",
 			buffer, minChar, maxChar, maxLength, line))
 
 	case 0x01: // Read system clock
@@ -51,7 +51,7 @@ func execOSWORD(env *environment) {
 		ticks := duration.Milliseconds() / 10
 		env.mem.pokenbytes(xy, 5, uint64(ticks))
 
-		env.log(fmt.Sprintf("OSWORD01('read system clock',BUF=0x%04x)=%v", xy, ticks&0xff_ffff_ffff))
+		env.log(fmt.Sprintf("OSWORD01('read system clock',BUF=0x%04x) => %v", xy, ticks&0xff_ffff_ffff))
 
 	case 0x02: // Write system clock
 		/*
@@ -74,7 +74,7 @@ func execOSWORD(env *environment) {
 		timer := env.timer + uint64(duration.Milliseconds()/10)
 		env.mem.pokenbytes(xy, 5, uint64(timer))
 
-		env.log(fmt.Sprintf("OSWORD03('read interval timer',BUF=0x%04x)=%v", xy, timer&0xff_ffff_ffff))
+		env.log(fmt.Sprintf("OSWORD03('read interval timer',BUF=0x%04x) => %v", xy, timer&0xff_ffff_ffff))
 
 	case 0x04: // Write interval timer
 		/*
@@ -100,7 +100,7 @@ func execOSWORD(env *environment) {
 		value := env.mem.Peek((uint16(address)))
 		env.mem.Poke(xy+4, value)
 
-		env.log(fmt.Sprintf("OSWORD05('Read I/O processor memory',ADDRESS=0x%08x)=0x%02x",
+		env.logIO(fmt.Sprintf("OSWORD05('Read I/O processor memory',ADDRESS=0x%08x) => 0x%02x",
 			address, value))
 
 	case 0x06: // Write i/O processor memory

@@ -76,12 +76,12 @@ CTR_CLAIMED:    rts
         ; When called internally, EQ set if call claimed
 ;* See https://github.com/raybellis/mos120/blob/2e2ff80708e79553643e4b77c947b0652117731b/mos120.s#L10683
 
-OSBYTE_143:		lda	ROM_SELECT          ; Get current ROM number
-			    pha                     ; Save it
-			    txa                     ; Pass service call number to  A
-			    ldx	#$0f                ; Start at ROM 15
-				; Issue service call loop
-NEXT:			inc ROM_TABLE,X         ; Read bit 7 on ROM type table (no ROM has type 254 &FE)
+OSBYTE_143:     lda ROM_SELECT          ; Get current ROM number
+                pha                     ; Save it
+                txa                     ; Pass service call number to  A
+                ldx #$0f                ; Start at ROM 15
+                                        ; Issue service call loop
+NEXT:           inc ROM_TABLE,X         ; Read bit 7 on ROM type table (no ROM has type 254 &FE)
                 dec ROM_TABLE,X         ;
                 bpl SKIP                ; If not set (+ve result), step to next ROM down
                 stx ROM_SELECT          ; Otherwise, select this ROM, &F4 RAM copy
@@ -95,8 +95,8 @@ SKIP:           dex                     ; Step to next ROM down
                 bpl NEXT                ; Loop until done ROM 0
 
 CLAIMED:        pla                     ; Get back original ROM number
-                sta	ROM_SELECT          ; Set ROM number RAM copy
-                sta	ROM_LATCH           ; Page in the original ROM
+                sta ROM_SELECT          ; Set ROM number RAM copy
+                sta ROM_LATCH           ; Page in the original ROM
                 txa                     ; Pass X back to A to set zero flag
                 rts                     ; And return
 

@@ -169,10 +169,10 @@ func execOSCLI(env *environment) {
 	if unhandled {
 		// Send to the other ROMS if available.
 		env.mem.pokeWord(zpStr, xy)
-		cmd := uint8(4) // Unrecognized command
+		cmd := uint8(serviceOSCLI)
 		env.cpu.SetAXYP(cmd, x, 1, p)
-		env.cpu.SetPC(procCLITOROMS)
-		// procCLITOROMS issues a 254-Bad command if the command is not handled by any ROM
+		env.cpu.SetPC(procServiceRoms)
+		// procServiceRoms issues a 254-Bad command if the command is not handled by any ROM
 	}
 }
 

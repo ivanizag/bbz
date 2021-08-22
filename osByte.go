@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"time"
 )
 
 func execOSBYTE(env *environment) {
@@ -12,6 +11,23 @@ func execOSBYTE(env *environment) {
 	option := ""
 	isIO := false
 	switch a {
+
+	case 0x00:
+		option = "Identify Operating System version"
+		/*
+			Entry parameters:
+				X=0 Execute BRK with a message giving the O.S. type
+				X<>0 RTS with O.S. type returned in X
+			On exit,
+				X=0, OS 1.00
+				X=1, OS 1.20
+		*/
+		if x == 0 {
+			env.raiseError(errorTodo, "MOS as interpreted by BZZ")
+		} else {
+			newX = 0
+		}
+
 	case 0x02:
 		option = "Select input device"
 		/*
@@ -29,6 +45,27 @@ func execOSBYTE(env *environment) {
 		option = "Select output device"
 		/*
 			On entry, the value in X determines the output device to be selected
+		*/
+		// We do nothing
+
+	case 0x04:
+		option = "Enable/disable cursor editing"
+		/*
+			Entry parameters: X determines editing keys' status, Y=0
+		*/
+		// We do nothing
+
+	case 0x05:
+		option = "Select print destination"
+		/*
+			Entry parameters: X determines print destination
+		*/
+		// We do nothing
+
+	case 0x15:
+		option = "Flush specific buffer"
+		/*
+			Entry parameters: X determines the buffer to be cleared
 		*/
 		// We do nothing
 
@@ -87,7 +124,7 @@ func execOSBYTE(env *environment) {
 		if x == 0xff { // Keyboard buffer
 			newX = 0
 		} else {
-			env.notImplemented("OSBYTE80 supported only for X=ff")
+			env.notImplemented("OSBYTE80 supported only for X=0xff")
 		}
 
 	case 0x81:
@@ -104,17 +141,12 @@ func execOSBYTE(env *environment) {
 		option = "Read key with time limit"
 		isIO = true
 		timeLimitMs := (uint16(x) + uint16(y)<<8) * 10
+		env.logIO(fmt.Sprintf("Sleep(%v ms", timeLimitMs))
 
 		// TODO: read the keyboard, for now we just wait the time limit
-		time.Sleep(time.Duration(timeLimitMs) * time.Millisecond)
-
-		if y == 0xff { // Keyboard scan
-			newY = 0 // not pressed
-		} else { // get key
-			newY = 0xff
-			newP = newP | 1 // Set carry
-			env.notImplemented("OSBYTE80 supported only for X=ff")
-		}
+		//time.Sleep(time.Duration(timeLimitMs) * time.Millisecond)
+		newY = 0xff
+		newP = newP | 1 // Set carry
 
 	case 0x82:
 		option = "Read machine high order address"
@@ -145,6 +177,18 @@ func execOSBYTE(env *environment) {
 		newX = uint8(romStartAddress & 0xff)
 		newY = uint8(romStartAddress >> 8)
 
+	case 0x87:
+		option = "Read character at text cursor position"
+		/*
+			No entry parameters
+			On exit,
+			X contains character value (0 if char. not recognised)
+			Y contains graphics MODE number
+		*/
+		// Not implemented. Just returns space
+		newX = ' '
+		newY = env.vdu.mode
+
 	case 0x8b:
 		option = "Set filing system options"
 		/*
@@ -167,6 +211,22 @@ func execOSBYTE(env *environment) {
 		env.initLanguage(x)
 		newA = 1
 
+	case 0xa0:
+		option = "Read VDU variable value"
+		/*
+			Entry parameters: X contains the number of the number to be read
+			On exit, X contains low byte of number and Y contains the high byte
+			This call reads locations &300,X and &301,X
+		*/
+		// Not implemented. Just returns O.
+		newX = 0
+		newY = 0
+		if x == 0x09 {
+			//Bottom row / Right hand column
+			newX = 31
+			newY = 39 // Pascal editor only works with 80 columns
+		}
+
 	case 0xca:
 		option = "Read/write keyboard status byte"
 		/*
@@ -176,9 +236,8 @@ func execOSBYTE(env *environment) {
 				bit 5: 0 if SHIFT LOCK is engaged.
 				bit 6: 1 if CTRL is pressed.
 				bit 7: 1 SHIFT enabled, if a LOCK key is engaged then SHIFT reverses the LOCK.
-
-			We return 0 always
 		*/
+		// Not implemented. Just returns O.
 		newX = 0
 		newY = 0
 
@@ -198,22 +257,35 @@ func execOSBYTE(env *environment) {
 	case 0xea:
 		option = "R/W Tube present flag"
 		/*
-			The value 255 indicates the Tube is present 0 indicates it is not
-			Writing to this value is not recommended
+			The value 255 indicates the Tube is present 0 indicates it is not.
+			Writing to this value is not recommended.
 
 			We return 0 always
 		*/
 		newX = 0
 		newY = 0
 
-	default:
-		env.notImplemented(fmt.Sprintf("OSBYTE%02x", a))
+	case 0xfd:
+		option = "Read hard/soft break"
 		/*
-			If the unrecognised OSBYTE is not claimed by a
-			paged ROM then a ‘Bad command’ error will be issued (error
-			number 254).
+			This location contains a value indicating the type of the last BREAK performed.
+				value 0 - soft BREAK
+				value 1 - power up reset
+				value 2 - hard BREAK
 		*/
-		env.raiseError(254, "Bad command")
+		newX = 2
+		newY = 2
+
+	default:
+		// Send to the other ROMS if available.
+		env.mem.Poke(zpA, a)
+		env.mem.Poke(zpX, x)
+		env.mem.Poke(zpY, y)
+		cmd := uint8(serviceOSBYTE)
+		env.cpu.SetAXYP(cmd, x, y, p)
+		env.cpu.SetPC(procServiceRoms)
+		env.log(fmt.Sprintf("OSBYTE%02x_to_roms(X=0x%02x,Y=0x%02x)", a, x, y))
+		// procServiceRoms issues a 254-Bad command if the command is not handled by any ROM
 	}
 
 	env.cpu.SetAXYP(newA, newX, newY, newP)

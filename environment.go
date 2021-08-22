@@ -88,13 +88,12 @@ func (env *environment) initLanguage(slot uint8) {
 		message if no version string is present).
 	*/
 	copyrightAddress := 0x8000 + 1 + uint16(env.mem.Peek(romCopyrightOffsetPointer))
-	copyrigt := env.mem.getString(copyrightAddress, 0)
 	env.mem.pokeWord(zpErrorPointer, copyrightAddress)
 	/*
 		The MOS also automatically prints the ROM's title string (&8009) so that the user is acknowledged.
 	*/
 	language := env.mem.getString(romTitleString, 0)
-	fmt.Printf("%s - %s\n", language, copyrigt)
+	fmt.Printf("%s\n", language)
 
 	_, x, y, p := env.cpu.GetAXYP()
 	env.cpu.SetAXYP(1, x, y, p)
