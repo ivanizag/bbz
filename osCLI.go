@@ -178,7 +178,7 @@ func execOSCLI(env *environment) {
 
 func execOSCLIfx(env *environment, argA uint8, params []string) {
 	argX := 0
-	if len(params) >= 2 {
+	if len(params) >= 1 {
 		var err error
 		argX, err = strconv.Atoi(strings.TrimSpace(params[0]))
 		if err != nil || (argX&0xff) != argX {
@@ -187,9 +187,9 @@ func execOSCLIfx(env *environment, argA uint8, params []string) {
 		}
 	}
 	argY := 0
-	if len(params) >= 3 {
+	if len(params) >= 2 {
 		var err error
-		argY, err = strconv.Atoi(strings.TrimSpace(params[2]))
+		argY, err = strconv.Atoi(strings.TrimSpace(params[1]))
 		if err != nil || (argY&0xff) != argY {
 			env.raiseError(254, "Bad Command")
 			return

@@ -281,8 +281,7 @@ func execOSBYTE(env *environment) {
 		env.mem.Poke(zpA, a)
 		env.mem.Poke(zpX, x)
 		env.mem.Poke(zpY, y)
-		cmd := uint8(serviceOSBYTE)
-		env.cpu.SetAXYP(cmd, x, y, p)
+		newA = uint8(serviceOSBYTE)
 		env.cpu.SetPC(procServiceRoms)
 		env.log(fmt.Sprintf("OSBYTE%02x_to_roms(X=0x%02x,Y=0x%02x)", a, x, y))
 		// procServiceRoms issues a 254-Bad command if the command is not handled by any ROM
