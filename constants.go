@@ -39,13 +39,14 @@ const (
 
 	// Support code on the firmware. Check firmware.lst when changing firmware.s
 	procServiceRoms uint16 = 0xf000
+	procOSBYTE_143  uint16 = 0xf015
 
 	// See http://beebwiki.mdfs.net/Service_calls
 	//serviceNoOperation uint8 = 0
 	serviceOSCLI  uint8 = 4
 	serviceOSBYTE uint8 = 7
 	//serviceOSWORD      uint8 = 8
-	//serviceHELP        uint8 = 9
+	serviceHELP uint8 = 9
 
 	// Scratch area for errors in page 0xfa
 	errorArea             uint16 = 0xfa00

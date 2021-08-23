@@ -37,7 +37,7 @@ var cliCommands = []string{
 }
 
 func execOSCLI(env *environment) {
-	_, x, y, p := env.cpu.GetAXYP()
+	a, x, y, p := env.cpu.GetAXYP()
 
 	/*
 		This routine passes a line of text to the command line
@@ -128,7 +128,11 @@ func execOSCLI(env *environment) {
 	//case "EXEC":
 	case "HELP":
 		fmt.Println("\nbbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz")
-		// TODO: multiple ROMS: service call 9 after the MOS message
+
+		// Send to the other ROMS if available.
+		env.mem.pokeWord(zpStr, xy)
+		env.cpu.SetAXYP(a, serviceHELP, 1, p)
+		env.cpu.SetPC(procOSBYTE_143)
 
 	case "HOST":
 		if len(args) == 0 {

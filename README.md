@@ -98,7 +98,7 @@ Running BBC Basic:
 $ ./bbz
 bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz
 
-BASIC - (C)1982 Acorn
+BASIC
 
 >PRINT "HELLO"
 HELLO
@@ -124,11 +124,11 @@ Log of the MOS calls (excluding the most verbose output API calls):
 $ ./bbz -m ROMs/Forth_103.rom
 bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz
 
-FORTH - (C) Acornsoft Ltd. 1983
+FORTH
 
 COLD or WARM start (C/W)? C
 [[[OSRDCH()=0x43]]]
-[[[OSARGS('Get filing system',A=00,Y=00)= 4]]]
+[[[OSARGS('Get filing system',A=00,Y=00) => 105]]]
 [[[OSBYTE82('Read machine high order address',X=0x58,Y=0x00) => (X=0xff,Y=0xff)]]]
 [[[OSBYTE84('Read top of user mem',X=0x58,Y=0x00) => (X=0x00,Y=0x80)]]]
 [[[OSBYTE83('Read bottom of user mem',X=0x58,Y=0x00) => (X=0x00,Y=0x0e)]]]
@@ -148,18 +148,28 @@ Using mode 7 colors:
 
 Using several ROMs at once:
 ```
-$ go run *.go -rom0 BASIC.ROM -rom1 ROMs/Forth_103.rom -rom2 ROMs/LISP-200.rom -rom3 ROMs/COMAL.rom
+$ ./bbz -rom0 BASIC.ROM -rom1 ROMs/Forth_103.rom -rom2 ROMs/LISP501.ROM -rom3 ROMs/COMAL.rom -rom4 ROMs/MPROLOG310.rom 
 bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz
 (tip: uppercase is usually needed)
 
-BASIC - (C)1982 Acorn
+BASIC
+>*HELP
 
+bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz
+
+FORTH 1.03
+
+LISP 5.01
+
+COMAL
+
+micro PROLOG 3.1
 >*LISP
-LISP - (C)1982 Acornsoft/1979 Owl Computers
+LISP
 
 
 Evaluate : (* '*FORTH)
-FORTH - (C) Acornsoft Ltd. 1983
+FORTH
 
 COLD or WARM start (C/W)? C
 
@@ -167,10 +177,13 @@ COLD or WARM start (C/W)? C
 FORTH
 OK
 OS' *COMAL'
-COMAL - (C)Acorn
+COMAL
 →*BASIC
-BASIC - (C)1982 Acorn
+BASIC
+>*PROLOGUE
+micro PROLOG
+29184 bytes free
+&.
 
->
 
 ```

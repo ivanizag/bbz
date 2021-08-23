@@ -63,7 +63,6 @@ CLITOROMS:      tax                     ; Service call number
                 .asciiz "Bad command"
 CTR_CLAIMED:    rts
 
-
 ;*************************************************************************
 ;*
 ;*  OSBYTE 143: Pass service commands to sideways ROMs
