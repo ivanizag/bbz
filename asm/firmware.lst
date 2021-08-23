@@ -3,7 +3,7 @@ Main file   : asm/firmware.s
 Current file: asm/firmware.s
 
 000000r 1               ; build:
-000000r 1               ;   cl65 -l asm/firmware.lst asm/firmware.s --config asm/firmware.cfg -o firmware
+000000r 1               ;   cl65 --target none -l asm/firmware.lst asm/firmware.s --config asm/firmware.cfg -o firmware
 000000r 1               ; Review constants.go when this code is changed
 000000r 1               
 000000r 1               
@@ -17,15 +17,13 @@ Current file: asm/firmware.s
 000000r 1               
 000000r 1               ; boot code
 000000r 1                               .org $0000
-000000  1               BOOT:
-000000  1  A9 01                        lda #$1
-000002  1  4C 00 80                     jmp LANGUAGE_ENTRY
-000005  1               
-000005  1               
-000005  1               ; init ram vectors
-000005  1  xx xx xx xx                  .res $0200 - *
+000000  1  EA           START:          nop
+000001  1               
+000001  1               
+000001  1               ; init ram vectors
+000001  1  xx xx xx xx                  .res $0200 - *
+000005  1  xx xx xx xx  
 000009  1  xx xx xx xx  
-00000D  1  xx xx xx xx  
 000200  1                               .org $0200
 000200  1               VECTORS_START:
 000200  1  11 FB        USERV:          .addr epUSER
@@ -86,12 +84,12 @@ Current file: asm/firmware.s
 00F015  1                       ; When called internally, EQ set if call claimed
 00F015  1               ;* See https://github.com/raybellis/mos120/blob/2e2ff80708e79553643e4b77c947b0652117731b/mos120.s#L10683
 00F015  1               
-00F015  1  A5 F4        OSBYTE_143:		lda	ROM_SELECT          ; Get current ROM number
-00F017  1  48           			    pha                     ; Save it
-00F018  1  8A           			    txa                     ; Pass service call number to  A
-00F019  1  A2 0F        			    ldx	#$0f                ; Start at ROM 15
-00F01B  1               				; Issue service call loop
-00F01B  1  FE 3A 02     NEXT:			inc ROM_TABLE,X         ; Read bit 7 on ROM type table (no ROM has type 254 &FE)
+00F015  1  A5 F4        OSBYTE_143:     lda ROM_SELECT          ; Get current ROM number
+00F017  1  48                           pha                     ; Save it
+00F018  1  8A                           txa                     ; Pass service call number to  A
+00F019  1  A2 0F                        ldx #$0f                ; Start at ROM 15
+00F01B  1                                                       ; Issue service call loop
+00F01B  1  FE 3A 02     NEXT:           inc ROM_TABLE,X         ; Read bit 7 on ROM type table (no ROM has type 254 &FE)
 00F01E  1  DE 3A 02                     dec ROM_TABLE,X         ;
 00F021  1  10 0D                        bpl SKIP                ; If not set (+ve result), step to next ROM down
 00F023  1  86 F4                        stx ROM_SELECT          ; Otherwise, select this ROM, &F4 RAM copy
@@ -105,8 +103,8 @@ Current file: asm/firmware.s
 00F031  1  10 E8                        bpl NEXT                ; Loop until done ROM 0
 00F033  1               
 00F033  1  68           CLAIMED:        pla                     ; Get back original ROM number
-00F034  1  85 F4                        sta	ROM_SELECT          ; Set ROM number RAM copy
-00F036  1  8D 30 FE                     sta	ROM_LATCH           ; Page in the original ROM
+00F034  1  85 F4                        sta ROM_SELECT          ; Set ROM number RAM copy
+00F036  1  8D 30 FE                     sta ROM_LATCH           ; Page in the original ROM
 00F039  1  8A                           txa                     ; Pass X back to A to set zero flag
 00F03A  1  60                           rts                     ; And return
 00F03B  1               
@@ -175,7 +173,7 @@ Current file: asm/firmware.s
 00FFC8  1  4C 09 FB     NVRDCH:         jmp epRDCH              ; NVRDCH non vectored OSRDCH
 00FFCB  1  4C 0A FB     NVWRCH:         jmp epWRCH              ; NVWRCH non vectored OSWRCH
 00FFCE  1  6C 1C 02     OSFIND:         jmp (FINDV)             ; OSFIND open or close a file
-00FFD1  1  6C 1A 02                     jmp (GBPBV)             ; OSGBPB transfer block to or from a file
+00FFD1  1  6C 1A 02     OSGBGP:         jmp (GBPBV)             ; OSGBPB transfer block to or from a file
 00FFD4  1  6C 18 02     OSBPUT:         jmp (BPUTV)             ; OSBPUT save a byte to file
 00FFD7  1  6C 16 02     OSBGET:         jmp (BGETV)             ; OSBGET get a byte from file
 00FFDA  1  6C 14 02     OSARGS:         jmp (ARGSV)             ; OSARGS read or write file arguments

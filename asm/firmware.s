@@ -13,9 +13,7 @@
 
 ; boot code
                 .org $0000
-BOOT:
-                lda #$1
-                jmp LANGUAGE_ENTRY
+START:          nop
 
 
 ; init ram vectors
@@ -157,7 +155,7 @@ GSREAD:         jmp epGSREAD            ; GSREAD read character from input strea
 NVRDCH:         jmp epRDCH              ; NVRDCH non vectored OSRDCH
 NVWRCH:         jmp epWRCH              ; NVWRCH non vectored OSWRCH
 OSFIND:         jmp (FINDV)             ; OSFIND open or close a file
-                jmp (GBPBV)             ; OSGBPB transfer block to or from a file
+OSGBGP:         jmp (GBPBV)             ; OSGBPB transfer block to or from a file
 OSBPUT:         jmp (BPUTV)             ; OSBPUT save a byte to file
 OSBGET:         jmp (BGETV)             ; OSBGET get a byte from file
 OSARGS:         jmp (ARGSV)             ; OSARGS read or write file arguments
