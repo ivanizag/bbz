@@ -126,8 +126,9 @@ func execOSCLI(env *environment) {
 	case "CODE":
 		execOSCLIfx(env, 0x88, strings.Split(args, ","))
 	//case "EXEC":
+
 	case "HELP":
-		fmt.Println("\nbbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz")
+		fmt.Println("\nBBZ 0.0")
 
 		// Send to the other ROMS if available.
 		env.mem.pokeWord(zpStr, xy)
@@ -173,8 +174,7 @@ func execOSCLI(env *environment) {
 	if unhandled {
 		// Send to the other ROMS if available.
 		env.mem.pokeWord(zpStr, xy)
-		cmd := uint8(serviceOSCLI)
-		env.cpu.SetAXYP(cmd, x, 1, p)
+		env.cpu.SetAXYP(serviceOSCLI, x, 1, p)
 		env.cpu.SetPC(procServiceRoms)
 		// procServiceRoms issues a 254-Bad command if the command is not handled by any ROM
 	}

@@ -155,7 +155,7 @@ bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz
 BASIC
 >*HELP
 
-bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz
+BBZ 0.0
 
 FORTH 1.03
 
