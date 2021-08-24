@@ -35,6 +35,7 @@ const (
 	romServiceEntry           uint16 = 0x8003
 	romTypeByte               uint16 = 0x8006
 	romCopyrightOffsetPointer uint16 = 0x8007
+	romVersion                uint16 = 0x8008
 	romTitleString            uint16 = 0x8009
 
 	// Support code on the firmware. Check firmware.lst when changing firmware.s
@@ -90,7 +91,7 @@ const (
 	epEntryPointsLast uint16 = 0xfb1f
 
 	// Fred, Jim and Sheila
-	sheila_rom_latch uint16 = 0xfe30
+	sheilaRomLatch uint16 = 0xfe30
 
 	maxFiles = 5
 )

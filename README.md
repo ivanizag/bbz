@@ -153,6 +153,23 @@ bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz
 (tip: uppercase is usually needed)
 
 BASIC
+>*ROMS
+ROM F BASIC 01
+ROM E FORTH 01
+ROM D LISP 05
+ROM C COMAL 16
+ROM B micro PROLOG  80
+ROM A ?
+ROM 9 ?
+ROM 8 ?
+ROM 7 ?
+ROM 6 ?
+ROM 5 ?
+ROM 4 ?
+ROM 3 ?
+ROM 2 ?
+ROM 1 ?
+ROM 0 ?
 >*HELP
 
 BBZ 0.0

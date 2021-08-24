@@ -81,7 +81,7 @@ func (env *environment) initUpperLanguage() {
 
 func (env *environment) initLanguage(slot uint8) {
 	env.mem.Poke(zpROMSelect, slot)
-	env.mem.Poke(sheila_rom_latch, slot)
+	env.mem.Poke(sheilaRomLatch, slot)
 
 	/*
 		Next, the MOS will set the error point at &FD/&FE to point at the version string (or copyright

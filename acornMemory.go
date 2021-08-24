@@ -28,12 +28,12 @@ func (m *acornMemory) Poke(address uint16, value uint8) {
 		}
 	}
 
-	if romStartAddress <= address && address <= romEndAddress {
+	if romStartAddress <= address && address <= romEndAddress && len(m.sideRom[m.activeRom]) > 0 {
 		m.sideRom[m.activeRom][address-romStartAddress] = value
 		return
 	}
 
-	if address == sheila_rom_latch {
+	if address == sheilaRomLatch {
 		m.activeRom = value & 0xf
 		if m.memLog {
 			fmt.Printf("[[[EnableROM(%x)]]]\n", m.activeRom)
@@ -52,7 +52,8 @@ func (m *acornMemory) Peek(address uint16) uint8 {
 		}
 	}
 
-	if romStartAddress <= address && address <= romEndAddress {
+	if romStartAddress <= address && address <= romEndAddress && len(m.sideRom[m.activeRom]) > 0 {
+
 		return m.sideRom[m.activeRom][address-romStartAddress]
 	}
 

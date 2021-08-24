@@ -30,6 +30,7 @@ var cliCommands = []string{
 	"QUIT", // Added for bbz
 	"RUN",
 	"ROM",
+	"ROMS",
 	"SAVE",
 	"SPOOL",
 	"TAPE",
@@ -160,6 +161,21 @@ func execOSCLI(env *environment) {
 	// case "RUN":
 	case "ROM":
 		execOSCLIfx(env, 0x8d, strings.Split(args, ","))
+
+	case "ROMS":
+		selectedROM := env.mem.Peek(sheilaRomLatch)
+		for i := 0xf; i >= 0; i-- {
+			env.mem.Poke(sheilaRomLatch, uint8(i))
+			name := env.mem.getString(romTitleString, 0)
+			if name == "" {
+				fmt.Printf("ROM %X ?\n", i)
+			} else {
+				version := env.mem.Peek(romVersion)
+				fmt.Printf("ROM %X %s %02v\n", i, name, version)
+			}
+		}
+		env.mem.Poke(sheilaRomLatch, selectedROM)
+
 	// case "SAVE":
 	// case "SPOOL":
 	case "TAPE":
