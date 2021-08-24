@@ -154,11 +154,11 @@ bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz
 
 BASIC
 >*ROMS
-ROM F BASIC 01
-ROM E FORTH 01
-ROM D LISP 05
-ROM C COMAL 16
-ROM B micro PROLOG  80
+ROM F BASIC 01 (L)
+ROM E FORTH 01 (SL)
+ROM D LISP 05 (SL)
+ROM C COMAL 16 (SL)
+ROM B micro PROLOG  80 (SL)
 ROM A ?
 ROM 9 ?
 ROM 8 ?

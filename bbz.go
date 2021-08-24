@@ -9,6 +9,8 @@ import (
 /*
 	See:
 		http://www.sprow.co.uk/bbc/library/sidewrom.pdf
+		https://acorn.huininga.nl/pub/docs/manuals/Bruce%20Smith/Bruce%20Smith%20-%20Advanced%20Sideways%20RAM%20User%20Guide.pdf
+
 */
 
 func RunMOS(env *environment) {

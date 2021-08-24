@@ -45,6 +45,7 @@ func newEnvironment(cpuLog bool, apiLog bool, apiLogIO bool, memLog bool, panicO
 	env.lastTimerUpdate = time.Now()
 	env.mem = newAcornMemory(memLog)
 	env.cpu = core6502.NewNMOS6502(env.mem)
+	//env.cpu = core6502.NewCMOS65c02(env.mem)
 	env.cpu.SetTrace(cpuLog)
 	env.vdu = newVdu(env.con)
 	env.apiLog = apiLog

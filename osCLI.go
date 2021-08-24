@@ -171,7 +171,17 @@ func execOSCLI(env *environment) {
 				fmt.Printf("ROM %X ?\n", i)
 			} else {
 				version := env.mem.Peek(romVersion)
-				fmt.Printf("ROM %X %s %02v\n", i, name, version)
+				romType := env.mem.Peek(romTypeByte)
+				attributes := "("
+				if romType&0x80 != 0 {
+					attributes += "S"
+				}
+				if romType&0x40 != 0 {
+					attributes += "L"
+				}
+				attributes += ")"
+
+				fmt.Printf("ROM %X %s %02v %s\n", i, name, version, attributes)
 			}
 		}
 		env.mem.Poke(sheilaRomLatch, selectedROM)
