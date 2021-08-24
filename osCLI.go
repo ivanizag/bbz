@@ -132,7 +132,7 @@ func execOSCLI(env *environment) {
 
 		// Send to the other ROMS if available.
 		env.mem.pokeWord(zpStr, xy)
-		env.cpu.SetAXYP(a, serviceHELP, 1, p)
+		env.cpu.SetAXYP(a, serviceHELP, uint8(pos), p)
 		env.cpu.SetPC(procOSBYTE_143)
 
 	case "HOST":
