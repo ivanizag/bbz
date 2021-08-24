@@ -130,17 +130,17 @@ epUSER:         rts                     ; 0xfb11
 epSYSBRK:       rts                     ; 0xfb12
 epRDRM:         rts                     ; 0xfb13
 epVDUCH:        rts                     ; 0xfb14
-epGSINIT:       rts                     ; 0xfb16
-epGSREAD:       rts                     ; 0xfb17
-epNET:          rts                     ; 0xfb18
-epVDU:          rts                     ; 0xfb19
-epKEY:          rts                     ; 0xfb1a
-epINS:          rts                     ; 0xfb1b
-epREM:          rts                     ; 0xfb1c
-epCNP:          rts                     ; 0xfb1d
-epIND1:         rts                     ; 0xfb1e
-epIND2:         rts                     ; 0xfb1f
-epIND3:         rts                     ; 0xfb20
+epGSINIT:       rts                     ; 0xfb15
+epGSREAD:       rts                     ; 0xfb16
+epNET:          rts                     ; 0xfb17
+epVDU:          rts                     ; 0xfb18
+epKEY:          rts                     ; 0xfb19
+epINS:          rts                     ; 0xfb1a
+epREM:          rts                     ; 0xfb1b
+epCNP:          rts                     ; 0xfb1c
+epIND1:         rts                     ; 0xfb1d
+epIND2:         rts                     ; 0xfb1e
+epIND3:         rts                     ; 0xfb1f
 
 
 ; MOS function calls

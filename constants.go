@@ -76,18 +76,18 @@ const (
 	epSYSBRK          uint16 = 0xfb12
 	epRDRM            uint16 = 0xfb13
 	epVDUCH           uint16 = 0xfb14
-	epGSINIT          uint16 = 0xfb16
-	epGSREAD          uint16 = 0xfb17
-	epNET             uint16 = 0xfb18
-	epVDU             uint16 = 0xfb19
-	epKEY             uint16 = 0xfb1a
-	epINS             uint16 = 0xfb1b
-	epREM             uint16 = 0xfb1c
-	epCNP             uint16 = 0xfb1d
-	epIND1            uint16 = 0xfb1e
-	epIND2            uint16 = 0xfb1f
-	epIND3            uint16 = 0xfb20
-	epEntryPointsLast uint16 = 0xfb20
+	epGSINIT          uint16 = 0xfb15
+	epGSREAD          uint16 = 0xfb16
+	epNET             uint16 = 0xfb17
+	epVDU             uint16 = 0xfb18
+	epKEY             uint16 = 0xfb19
+	epINS             uint16 = 0xfb1a
+	epREM             uint16 = 0xfb1b
+	epCNP             uint16 = 0xfb1c
+	epIND1            uint16 = 0xfb1d
+	epIND2            uint16 = 0xfb1e
+	epIND3            uint16 = 0xfb1f
+	epEntryPointsLast uint16 = 0xfb1f
 
 	// Fred, Jim and Sheila
 	sheila_rom_latch uint16 = 0xfe30
