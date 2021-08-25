@@ -62,28 +62,29 @@ func execOSCLI(env *environment) {
 		pos++
 	}
 	if line[pos] == '|' || line[pos] == '\r' { // Ignore "*|" or standalone "*"
+		env.log(fmt.Sprintf("OSCLI('%s', CMD=empty)", lineNotTerminated))
 		return
 	}
-	if line[pos] == '/' { // Send "*/[...]" to filling system
-		env.log("*/[...] not implemented")
-		return
-	}
-
-	// Extract command
 	command := ""
-	for ; !strings.ContainsAny(string(line[pos]), " .0123456789\r"); pos++ {
-		command += string(line[pos])
-	}
-	command = strings.ToUpper(command) // Commands are case insensitive
-	if line[pos] == '.' {
-		// Expand . shortcut
-		for _, candidate := range cliCommands {
-			if strings.HasPrefix(candidate, command) {
-				command = candidate // Full command found
-				break
-			}
-		}
+	if line[pos] == '/' { // Send "*/[...]" to filling system
+		command = "RUN"
 		pos++
+	} else {
+		// Extract command
+		for ; !strings.ContainsAny(string(line[pos]), " .0123456789\r"); pos++ {
+			command += string(line[pos])
+		}
+		command = strings.ToUpper(command) // Commands are case insensitive
+		if line[pos] == '.' {
+			// Expand . shortcut
+			for _, candidate := range cliCommands {
+				if strings.HasPrefix(candidate, command) {
+					command = candidate // Full command found
+					break
+				}
+			}
+			pos++
+		}
 	}
 	for line[pos] == ' ' { // Remove spaces after command
 		pos++

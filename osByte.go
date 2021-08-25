@@ -69,6 +69,18 @@ func execOSBYTE(env *environment) {
 		*/
 		// We do nothing
 
+	case 0x72:
+		option = "Specify video memory to use on next MODE change"
+		/*
+			On entry:
+				X=0 force use of shadow memory on future MODE changes
+				X=1 only use shadow memory if MODE number is > 127
+				X=255 never use shadow memory even if MODE > 127 (Solidisk ROM/RAM Extension)
+			On exit:
+				X=previous setting
+		*/
+		newX = 1
+
 	case 0x76:
 		option = "Reflect keyboard status in keyboard LEDs"
 		/*
