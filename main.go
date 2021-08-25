@@ -71,6 +71,7 @@ func main() {
 	}
 
 	env.initUpperLanguage()
+	env.mem.completeWithRam()
 
 	RunMOS(env)
 }

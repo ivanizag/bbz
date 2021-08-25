@@ -1,0 +1,10 @@
+bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz
+(tip: uppercase is usually needed)
+
+BASIC
+>*RUN ROMs/Basic128/BasObj
+
+BBC BASIC
+64K bytes free
+
+>

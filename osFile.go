@@ -1,9 +1,16 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
+)
+
+const (
+	osNotFound       uint8 = 0
+	osFileFound      uint8 = 1
+	osDirectoryFound uint8 = 2
 )
 
 func execOSFILE(env *environment) {
@@ -67,13 +74,8 @@ func execOSFILE(env *environment) {
 		if !useLoadAddress {
 			env.notImplemented("Loading files on their own load address")
 		}
-		data, err := ioutil.ReadFile(filename)
-		if err == nil {
-			// NOTE: There is no maxLength?
-			env.mem.storeSlice(uint16(loadAddress), uint16(len(data)), data)
-			filesize = uint64(len(data))
-			newA = 1 // File found
-		}
+		newA, filesize = loadFile(env, filename, uint16(loadAddress))
+
 	default:
 		env.notImplemented(fmt.Sprintf("OSFILE(A=%02x)", a))
 	}
@@ -85,4 +87,21 @@ func execOSFILE(env *environment) {
 	env.log(fmt.Sprintf("OSFILE('%s',A=%02x,FCB=%04x,FILE=%s,SIZE=%v) => (A=%v,SIZE=%v)",
 		option, a, controlBlock, filename, filesize, newA, filesize))
 
+}
+
+func loadFile(env *environment, filename string, loadAddress uint16) (uint8, uint64) {
+	data, err := os.ReadFile(filename)
+	if errors.Is(err, os.ErrNotExist) {
+		env.raiseError(214, "File not found")
+		return osNotFound, 0
+	}
+	if err != nil {
+		env.raiseError(errorTodo, err.Error())
+		return osNotFound, 0
+	}
+
+	// NOTE: There is no maxLength?
+	env.mem.storeSlice(uint16(loadAddress), uint16(len(data)), data)
+	filesize := uint64(len(data))
+	return osFileFound, filesize
 }

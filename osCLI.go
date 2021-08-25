@@ -150,7 +150,32 @@ func execOSCLI(env *environment) {
 		}
 
 	// case "KEY":
-	// case "LOAD":
+	case "LOAD":
+		params := strings.Split(args, " ")
+		if len(params) > 2 {
+			env.raiseError(254, "Bad command")
+			break
+		}
+		if len(params) == 0 {
+			env.raiseError(214, "File not found")
+			break
+		}
+		filename := params[0]
+		loadAddress := uint16(0x3000) // TODO: retrieve from the metadata
+		if len(params) >= 2 {
+			i, err := strconv.ParseInt(params[1], 16, 16)
+			if err != nil {
+				env.raiseError(252, "Bad address")
+				break
+			}
+			loadAddress = uint16(i)
+		}
+		res, _ := loadFile(env, filename, loadAddress)
+		if res != osFileFound {
+			env.raiseError(214, "File not found")
+			break
+		}
+
 	// case "LINE":
 	case "MOTOR":
 		execOSCLIfx(env, 0x89, strings.Split(args, ","))
@@ -158,30 +183,49 @@ func execOSCLI(env *environment) {
 		execOSCLIfx(env, 0x8b, strings.Split(args, ","))
 	case "QUIT":
 		env.stop = true
-	// case "RUN":
+	case "RUN":
+		params := strings.Split(args, " ")
+		if len(params) == 0 {
+			env.raiseError(214, "File not found")
+			break
+		}
+		filename := params[0]
+		loadAddress := uint16(0x3000) // TODO: retrieve from the metadata
+		execAddress := uint16(0x3100)
+		res, _ := loadFile(env, filename, loadAddress)
+		if res != osFileFound {
+			env.raiseError(214, "File not found")
+			break
+		}
+		env.cpu.SetPC(execAddress)
+
 	case "ROM":
 		execOSCLIfx(env, 0x8d, strings.Split(args, ","))
 
 	case "ROMS":
 		selectedROM := env.mem.Peek(sheilaRomLatch)
 		for i := 0xf; i >= 0; i-- {
-			env.mem.Poke(sheilaRomLatch, uint8(i))
-			name := env.mem.getString(romTitleString, 0)
-			if name == "" {
-				fmt.Printf("ROM %X ?\n", i)
-			} else {
-				version := env.mem.Peek(romVersion)
-				romType := env.mem.Peek(romTypeByte)
-				attributes := "("
-				if romType&0x80 != 0 {
-					attributes += "S"
-				}
-				if romType&0x40 != 0 {
-					attributes += "L"
-				}
-				attributes += ")"
+			if env.mem.writeProtectRom[i] {
+				env.mem.Poke(sheilaRomLatch, uint8(i))
+				name := env.mem.getString(romTitleString, 0)
+				if name == "" {
+					fmt.Printf("ROM %X ?\n", i)
+				} else {
+					version := env.mem.Peek(romVersion)
+					romType := env.mem.Peek(romTypeByte)
+					attributes := "("
+					if romType&0x80 != 0 {
+						attributes += "S"
+					}
+					if romType&0x40 != 0 {
+						attributes += "L"
+					}
+					attributes += ")"
 
-				fmt.Printf("ROM %X %s %02v %s\n", i, name, version, attributes)
+					fmt.Printf("ROM %X %s %02v %s\n", i, name, version, attributes)
+				}
+			} else {
+				fmt.Printf("RAM %X 16K\n", i)
 			}
 		}
 		env.mem.Poke(sheilaRomLatch, selectedROM)

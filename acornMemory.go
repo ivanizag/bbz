@@ -7,10 +7,11 @@ import (
 )
 
 type acornMemory struct {
-	data      [65536]uint8
-	sideRom   [16][]uint8
-	activeRom uint8
-	memLog    bool
+	data            [65536]uint8
+	sideRom         [16][]uint8
+	writeProtectRom [16]bool
+	activeRom       uint8
+	memLog          bool
 }
 
 func newAcornMemory(memLog bool) *acornMemory {
@@ -28,8 +29,13 @@ func (m *acornMemory) Poke(address uint16, value uint8) {
 		}
 	}
 
-	if romStartAddress <= address && address <= romEndAddress && len(m.sideRom[m.activeRom]) > 0 {
-		m.sideRom[m.activeRom][address-romStartAddress] = value
+	if romStartAddress <= address && address <= romEndAddress {
+		if !m.writeProtectRom[m.activeRom] {
+			slot := m.sideRom[m.activeRom]
+			if len(slot) > int(address-romStartAddress) {
+				slot[address-romStartAddress] = value
+			}
+		}
 		return
 	}
 
@@ -53,8 +59,11 @@ func (m *acornMemory) Peek(address uint16) uint8 {
 	}
 
 	if romStartAddress <= address && address <= romEndAddress && len(m.sideRom[m.activeRom]) > 0 {
-
-		return m.sideRom[m.activeRom][address-romStartAddress]
+		slot := m.sideRom[m.activeRom]
+		if len(slot) > int(address-romStartAddress) {
+			return slot[address-romStartAddress]
+		}
+		return 0xaa
 	}
 
 	return value
@@ -66,6 +75,8 @@ func (m *acornMemory) PeekCode(address uint16) uint8 {
 
 func memoryArea(address uint16) string {
 	switch address >> 8 {
+	//case 0x00:
+	//	return "ZEROPAGE"
 	case 0xfc:
 		return "FRED"
 	case 0xfd:
@@ -92,9 +103,19 @@ func (m *acornMemory) loadRom(filename string, slot uint8) {
 	}
 
 	m.sideRom[slot] = data
+	m.writeProtectRom[slot] = true
 
 	// Cache the ROM type
 	m.data[romTypeTable+uint16(slot)] = data[romTypeByte-romStartAddress]
+}
+
+func (m *acornMemory) completeWithRam() {
+	for i := 0; i < 16; i++ {
+		slot := m.sideRom[i]
+		if len(slot) == 0 {
+			m.sideRom[i] = make([]uint8, 16*1024)
+		}
+	}
 }
 
 // helpers

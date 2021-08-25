@@ -24,17 +24,21 @@ References:
 
 ## Features
 - Can run BBC BASIC and most of the language ROMs.
-- Can load up to 16 sideways ROMs.
-- Readline like input with persistent history (`-r` parameter)
-- Some of the MOS entrypoints and VDU control codes are defined.
 - Saves and loads files from the host filesystem.
+- Readline like input with persistent history (`-r` parameter)
+- Can load up to 16 sideways ROMs.
+- Can load up to 16 sideways RAM 16K expansions.
+- Some of the MOS entrypoints and VDU control codes are defined.
 - Does some of the mode 7 text coloring using ANSI escape codes on the terminal. Try `VDU 65,129,66,130,67,132,68,135,69,13,10` on BBC BASIC.
 - OSCLI comands suported:
-  - *QUIT: exit
-  - *HELP
-  - *BASIC
   - *FX
+  - *BASIC
+  - *HELP
   - *HOST cmd: execute a command on the host OS. Example: `*HOST ls -la`
+  - *LOAD
+  - *QUIT: exit to host
+  - *RUN
+  - *ROMS
 
 ## Usage 
 
@@ -159,17 +163,17 @@ ROM E FORTH 01 (SL)
 ROM D LISP 05 (SL)
 ROM C COMAL 16 (SL)
 ROM B micro PROLOG  80 (SL)
-ROM A ?
-ROM 9 ?
-ROM 8 ?
-ROM 7 ?
-ROM 6 ?
-ROM 5 ?
-ROM 4 ?
-ROM 3 ?
-ROM 2 ?
-ROM 1 ?
-ROM 0 ?
+RAM A 16K
+RAM 9 16K
+RAM 8 16K
+RAM 7 16K
+RAM 6 16K
+RAM 5 16K
+RAM 4 16K
+RAM 3 16K
+RAM 2 16K
+RAM 1 16K
+RAM 0 16K
 >*HELP
 
 BBZ 0.0
