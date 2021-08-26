@@ -162,20 +162,16 @@ func execOSCLI(env *environment) {
 			break
 		}
 		filename := params[0]
-		loadAddress := uint16(0x3000) // TODO: retrieve from the metadata
+		loadAddress := loadAddressNull
 		if len(params) >= 2 {
-			i, err := strconv.ParseInt(params[1], 16, 16)
+			i, err := strconv.ParseInt(params[1], 16, 32)
 			if err != nil {
 				env.raiseError(252, "Bad address")
 				break
 			}
-			loadAddress = uint16(i)
+			loadAddress = uint32(i)
 		}
-		res, _ := loadFile(env, filename, loadAddress)
-		if res != osFileFound {
-			env.raiseError(214, "File not found")
-			break
-		}
+		loadFile(env, filename, loadAddress)
 
 	// case "LINE":
 	case "MOTOR":
@@ -191,14 +187,14 @@ func execOSCLI(env *environment) {
 			break
 		}
 		filename := params[0]
-		loadAddress := uint16(0x3000) // TODO: retrieve from the metadata
-		execAddress := uint16(0x3100)
-		res, _ := loadFile(env, filename, loadAddress)
-		if res != osFileFound {
-			env.raiseError(214, "File not found")
-			break
+		attr := loadFile(env, filename, loadAddressNull)
+		if attr.fileType == osFileFound {
+			if attr.hasMetadata {
+				env.cpu.SetPC(uint16(attr.executionAddress))
+			} else {
+				env.raiseError(errorTodo, "Missing metadata file")
+			}
 		}
-		env.cpu.SetPC(execAddress)
 
 	case "ROM":
 		execOSCLIfx(env, 0x8d, strings.Split(args, ","))
