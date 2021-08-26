@@ -35,8 +35,10 @@ References:
   - */
   - *FX
   - *BASIC
+  - *DIR
   - *HELP
   - *HOST cmd: execute a command on the host OS. Example: `*HOST ls -la`
+  - *INFO
   - *LOAD
   - *QUIT: exit to host
   - *RUN

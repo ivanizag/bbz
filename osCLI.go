@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -19,9 +20,11 @@ var cliCommands = []string{
 	"FX",
 	"BASIC",
 	"CODE",
+	"DIR",
 	"EXEC",
 	"HELP",
 	"HOST", // Added for bbz
+	"INFO",
 	"KEY",
 	"LOAD",
 	"LINE",
@@ -127,6 +130,24 @@ func execOSCLI(env *environment) {
 
 	case "CODE":
 		execOSCLIfx(env, 0x88, strings.Split(args, ","))
+
+	case "DIR":
+		dest := args
+		if len(dest) == 0 {
+			var err error
+			dest, err = os.UserHomeDir()
+			if err != nil {
+				env.raiseError(errorTodo, err.Error())
+				break
+			}
+		}
+
+		err := os.Chdir(dest)
+		if err != nil {
+			env.raiseError(206, "Bad directory")
+			break
+		}
+
 	//case "EXEC":
 
 	case "HELP":
@@ -140,14 +161,22 @@ func execOSCLI(env *environment) {
 	case "HOST":
 		if len(args) == 0 {
 			env.raiseError(errorTodo, "Command missing for *HOST")
+			break
+		}
+		params := strings.Split(args, " ")
+		cmd := exec.Command(params[0], params[1:]...)
+		stdout, err := cmd.Output()
+		if err != nil {
+			env.raiseError(errorTodo, err.Error())
+		}
+		fmt.Println(string(stdout))
+
+	case "INFO":
+		attr := getFileAttributes(env, args)
+		if attr.hasMetadata {
+			fmt.Printf("%s\t %06X %06X %06X\n", args, attr.loadAddress, attr.executionAddress, attr.fileSize)
 		} else {
-			params := strings.Split(args, " ")
-			cmd := exec.Command(params[0], params[1:]...)
-			stdout, err := cmd.Output()
-			if err != nil {
-				env.raiseError(errorTodo, err.Error())
-			}
-			fmt.Println(string(stdout))
+			fmt.Printf("%s\t ?????? ?????? %06X\n", args, attr.fileSize)
 		}
 
 	// case "KEY":
