@@ -2,4 +2,5 @@ bbz
 dist/
 firmware.o
 .bzzhistory
+.bbzhistory
 XROMs/

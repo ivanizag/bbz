@@ -25,10 +25,9 @@ References:
 ## Features
 - Can run BBC BASIC and most of the language ROMs.
 - Saves and loads files from the host filesystem.
-- Readline like input with persistent history (`-r` parameter)
-- Can load up to 16 sideways ROMs.
-- Can load up to 16 sideways RAM 16K expansions.
-- Some of the MOS entrypoints and VDU control codes are defined.
+- Readline like input with persistent history.
+- Can load up to 16 sideways ROMs, the unused slots are filled with sideways RAM 16K expansions.
+- Most of the MOS entrypoints and VDU control codes are defined.
 - Does some of the mode 7 text coloring using ANSI escape codes on the terminal. Try `VDU 65,129,66,130,67,132,68,135,69,13,10` on BBC BASIC.
 - OSCLI comands suported:
   - *|
@@ -60,7 +59,7 @@ AvaIlable flags (to put before the ROM filename if present):
   -c	dump to the console the CPU execution operations
   -m	dump to the console the MOS calls excluding console I/O calls
   -p	panic on not implemented MOS calls
-  -r	use readline like input with history
+  -r	disable readline like input with history
   -s	dump to the console the accesses to Fred, Jim or Sheila
   -rom0 string
     	filename for rom 0 (slot 0xf)

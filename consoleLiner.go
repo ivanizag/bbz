@@ -9,7 +9,7 @@ import (
 	"github.com/peterh/liner"
 )
 
-const historyFilename = ".bzzhistory"
+const historyFilename = ".bbzhistory"
 
 type consoleLiner struct {
 	liner  *liner.State
@@ -49,7 +49,9 @@ func (c *consoleLiner) readline() (string, bool) {
 	if err != nil {
 		panic(err)
 	}
-	c.liner.AppendHistory(line)
+	if line != "" {
+		c.liner.AppendHistory(line)
+	}
 	return line, false
 }
 

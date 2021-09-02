@@ -33,12 +33,12 @@ type environment struct {
 	panicOnErr bool
 }
 
-func newEnvironment(cpuLog bool, apiLog bool, apiLogIO bool, memLog bool, panicOnErr bool, readline bool) *environment {
+func newEnvironment(cpuLog bool, apiLog bool, apiLogIO bool, memLog bool, panicOnErr bool, rawline bool) *environment {
 	var env environment
-	if readline {
-		env.con = newConsoleLiner()
-	} else {
+	if rawline {
 		env.con = newConsoleSimple()
+	} else {
+		env.con = newConsoleLiner()
 	}
 	env.referenceTime = time.Now()
 	env.timer = 0
