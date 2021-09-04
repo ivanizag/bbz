@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"time"
 )
 
 func execOSBYTE(env *environment) {
@@ -59,6 +60,27 @@ func execOSBYTE(env *environment) {
 		option = "Select print destination"
 		/*
 			Entry parameters: X determines print destination
+		*/
+		// We do nothing
+
+	case 0x0b:
+		option = "Set keyboard auto-repeat delay"
+		/*
+			Entry parameters: X determines delay before repeating starts
+		*/
+		// We do nothing
+
+	case 0x0c:
+		option = "Set keyboard auto-repeat period"
+		/*
+			Entry parameters: X determines auto-repeat periodic interval
+		*/
+		// We do nothing
+
+	case 0x0f:
+		option = "Flush specific buffer"
+		/*
+			Entry parameters: X value selects class of buffer
 		*/
 		// We do nothing
 
@@ -148,17 +170,24 @@ func execOSBYTE(env *environment) {
 				is pressed then Y=&1B (27) and C=1.
 			If called with Y=&FF and a negative INKEY value in X (see appendix C) this call
 			performs a keyboard scan. On exit, X and Y contain &FF if the key being scanned
-			is pressed.
+			is pressed and 0 otherwise.
 		*/
-		option = "Read key with time limit"
-		isIO = true
-		timeLimitMs := (uint16(x) + uint16(y)<<8) * 10
-		env.logIO(fmt.Sprintf("Sleep(%v ms", timeLimitMs))
+		//isIO = true
 
-		// TODO: read the keyboard, for now we just wait the time limit
-		//time.Sleep(time.Duration(timeLimitMs) * time.Millisecond)
-		newY = 0xff
-		newP = newP | 1 // Set carry
+		if x < 0x80 {
+			option = "Read key with time limit"
+			// We will just wait the time and return that no key was pressed
+			timeLimitMs := (uint16(x) + uint16(y)<<8) * 10
+			env.logIO(fmt.Sprintf("Sleep(%v ms", timeLimitMs))
+			time.Sleep(time.Duration(timeLimitMs) * time.Millisecond)
+			newY = 0xff
+			newP = newP | 1 // Set carry
+		} else {
+			option = "Scan keyboard for key press"
+			// We will just return that the key was not pressed
+			newX = 0
+			newY = 0
+		}
 
 	case 0x82:
 		option = "Read machine high order address"
