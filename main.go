@@ -3,6 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
@@ -61,6 +64,7 @@ func main() {
 		*panicOnErr,
 		*rawline)
 	defer env.close()
+	handleControlC(env)
 
 	env.mem.loadFirmware()
 
@@ -74,4 +78,15 @@ func main() {
 	env.mem.completeWithRam()
 
 	RunMOS(env)
+}
+
+func handleControlC(env *environment) {
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		fmt.Println("\r- Ctrl+C pressed in Terminal")
+		env.close()
+		os.Exit(0)
+	}()
 }
