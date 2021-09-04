@@ -85,7 +85,6 @@ func handleControlC(env *environment) {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		fmt.Println("\r- Ctrl+C pressed in Terminal")
 		env.close()
 		os.Exit(0)
 	}()
