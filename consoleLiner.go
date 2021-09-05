@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -42,6 +43,10 @@ func (c *consoleLiner) close() {
 func (c *consoleLiner) readline() (string, bool) {
 	fmt.Printf("\r")
 	line, err := c.liner.Prompt(c.prompt)
+	if errors.Is(err, liner.ErrInvalidPrompt) {
+		fmt.Println()
+		line, err = c.liner.Prompt("")
+	}
 	c.prompt = ""
 	if err == liner.ErrPromptAborted || err == io.EOF {
 		return "", true
