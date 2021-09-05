@@ -174,7 +174,7 @@ func execOSBYTE(env *environment) {
 		*/
 		//isIO = true
 
-		if x < 0x80 {
+		if y < 0x80 {
 			option = "Read key with time limit"
 			// We will just wait the time and return that no key was pressed
 			timeLimitMs := (uint16(x) + uint16(y)<<8) * 10
@@ -182,11 +182,17 @@ func execOSBYTE(env *environment) {
 			time.Sleep(time.Duration(timeLimitMs) * time.Millisecond)
 			newY = 0xff
 			newP = newP | 1 // Set carry
-		} else {
+		} else if y == 0xff && x != 0 {
 			option = "Scan keyboard for key press"
 			// We will just return that the key was not pressed
 			newX = 0
 			newY = 0
+		} else if y == 0xff && x == 0 {
+			option = "Check machine type"
+			// See: http://beebwiki.mdfs.net/INKEY
+			newX = 0x2a // BBZ, not currently reserved
+		} else {
+			option = "Undefined use of OSBYTE81"
 		}
 
 	case 0x82:
