@@ -74,7 +74,7 @@ func execOSCLI(env *environment) {
 		pos++
 	} else {
 		// Extract command
-		for ; !strings.ContainsAny(string(line[pos]), " .0123456789\r"); pos++ {
+		for ; !strings.ContainsAny(string(line[pos]), " .0123456789\r\""); pos++ {
 			command += string(line[pos])
 		}
 		command = strings.ToUpper(command) // Commands are case insensitive
@@ -181,6 +181,7 @@ func execOSCLI(env *environment) {
 
 	// case "KEY":
 	case "LOAD":
+		// *LOAD <filename> [<address>]
 		params := strings.Split(args, " ")
 		if len(params) > 2 {
 			env.raiseError(254, "Bad command")
@@ -190,7 +191,7 @@ func execOSCLI(env *environment) {
 			env.raiseError(214, "File not found")
 			break
 		}
-		filename := params[0]
+		filename := cleanFilename(params[0])
 		loadAddress := loadAddressNull
 		if len(params) >= 2 {
 			i, err := strconv.ParseInt(params[1], 16, 32)
@@ -210,12 +211,13 @@ func execOSCLI(env *environment) {
 	case "QUIT":
 		env.stop = true
 	case "RUN":
+		// *RUN <filename>
 		params := strings.Split(args, " ")
 		if len(params) == 0 {
 			env.raiseError(214, "File not found")
 			break
 		}
-		filename := params[0]
+		filename := cleanFilename(params[0])
 		attr := loadFile(env, filename, loadAddressNull)
 		if attr.fileType == osFileFound {
 			if attr.hasMetadata {
@@ -256,7 +258,44 @@ func execOSCLI(env *environment) {
 		}
 		env.mem.Poke(sheilaRomLatch, selectedROM)
 
-	// case "SAVE":
+	case "SAVE":
+		// *SAVE <filename> <start addr> <end addr or length> <exec addr> <reload addr>
+		params := strings.Split(args, " ")
+		if len(params) < 3 || len(params) > 5 {
+			env.raiseError(254, "Bad command")
+			break
+		}
+
+		filename := cleanFilename(params[0])
+
+		i, err := strconv.ParseInt(params[1], 16, 32)
+		if err != nil {
+			env.raiseError(252, "Bad address")
+			break
+		}
+		startAddress := uint32(i)
+
+		isSize := false
+		if params[2][0] == '+' {
+			isSize = true
+			params[2] = params[2][1:]
+		}
+		i, err = strconv.ParseInt(params[2], 16, 32)
+		if err != nil {
+			env.raiseError(252, "Bad address")
+			break
+		}
+		endAddress := uint32(i)
+		if isSize {
+			endAddress = startAddress - endAddress
+		}
+
+		if len(params) > 3 {
+			env.notImplemented("*SAVE with execution o reload address")
+		}
+
+		saveFile(env, filename, startAddress, endAddress)
+
 	// case "SPOOL":
 	case "TAPE":
 		execOSCLIfx(env, 0x8c, strings.Split(args, ","))
@@ -300,4 +339,11 @@ func execOSCLIfx(env *environment, argA uint8, params []string) {
 	_, _, _, p := env.cpu.GetAXYP()
 	env.cpu.SetAXYP(uint8(argA), uint8(argX), uint8(argY), p)
 	execOSBYTE(env)
+}
+
+func cleanFilename(filename string) string {
+	if filename[0] == '"' && len(filename) >= 2 {
+		return filename[1:(len(filename) - 1)]
+	}
+	return filename
 }

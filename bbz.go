@@ -45,13 +45,7 @@ func RunMOS(env *environment) {
 				execOSFIND(env)
 
 			case epGBPB: // OSGBPB
-				/*
-					OSGBPB Read or write a group of bytes.
-					Call address &FFD1 Indirected through &21A
-					This routine transfers a number of bytes to or from an open file.
-					It can also be used to transfer filing system information.
-				*/
-				env.notImplemented(fmt.Sprintf("OSGBPB(A=0x%02x,X=0x%02x,y=0x%02x)", a, x, y))
+				execOSGBPB(env)
 
 			case epBPUT: // OSBPUT
 				/*

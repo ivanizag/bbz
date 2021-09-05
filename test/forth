@@ -1,0 +1,18 @@
+VLIST
+OS' QUIT
+CREATE-SCREENS
+
+
+Write a program and save:
+
+PROGRAM
+14
+0 P ( page 14 )
+14 LIST
+SAVE
+Y
+
+Load the program
+
+30 LIST
+

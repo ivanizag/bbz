@@ -43,7 +43,6 @@ func execOSFILE(env *environment) {
 	endAddress := uint32(env.mem.peeknbytes(controlBlock+cbEndAddressOrAttributes, 4))
 
 	filename := env.mem.getString(filenameAddress, 0x0d)
-	filesize := endAddress - startAddress
 
 	newA := uint8(0) // Nothing found
 	option := ""
@@ -54,14 +53,9 @@ func execOSFILE(env *environment) {
 			Save a block of memory as a file using the
 			information provided in the parameter block.
 		*/
-		data := env.mem.getSlice(uint16(startAddress), uint16(filesize))
-		err := ioutil.WriteFile(filename, data, 0644)
-		if err != nil {
-			env.raiseError(errorTodo, err.Error())
-			newA = osNotFound
-		} else {
-			newA = osFileFound
-		}
+		attr := saveFile(env, filename, startAddress, endAddress)
+		newA = attr.fileType
+
 	case 5:
 		option = "File info"
 		/*
@@ -137,6 +131,22 @@ func loadFile(env *environment, filename string, loadAddress uint32) fileAttribu
 
 	// NOTE: There is no maxLength?
 	env.mem.storeSlice(uint16(loadAddress), uint16(len(data)), data)
+	return attr
+}
+
+func saveFile(env *environment, filename string, startAddress uint32, endAddress uint32) fileAttributes {
+	var attr fileAttributes
+	attr.loadAddress = startAddress
+	attr.fileSize = endAddress - startAddress
+
+	data := env.mem.getSlice(uint16(attr.loadAddress), uint16(attr.fileSize))
+	err := ioutil.WriteFile(filename, data, 0644)
+	if err != nil {
+		env.raiseError(errorTodo, err.Error())
+		attr.fileType = osNotFound
+	} else {
+		attr.fileType = osFileFound
+	}
 	return attr
 }
 
