@@ -68,7 +68,7 @@ func execOSGBPB(env *environment) {
 
 		transferred := uint32(0)
 		if !error && (a == 1 || a == 2) { // Write
-			data := env.mem.getSlice(uint16(address), uint16(count))
+			data := env.mem.peekSlice(uint16(address), uint16(count))
 			n, err := file.Write(data)
 			if err != nil {
 				// Error
@@ -86,7 +86,7 @@ func execOSGBPB(env *environment) {
 				error = true
 				env.log(err.Error())
 			}
-			env.mem.storeSlice(uint16(address), uint16(n), data)
+			env.mem.pokeSlice(uint16(address), uint16(n), data)
 			transferred = uint32(n)
 		}
 

@@ -69,7 +69,7 @@ func execOSFIND(env *environment) {
 
 	// Open file
 	address := uint16(x) + uint16(y)<<8
-	filename := env.mem.getString(address, 0x0d)
+	filename := env.mem.peekString(address, 0x0d)
 
 	// Find the first free file handle
 	handle := -1

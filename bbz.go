@@ -166,7 +166,7 @@ func RunMOS(env *environment) {
 				address := env.mem.peekWord(0x100+uint16(sp+2)) - 1
 				faultNumber := env.mem.Peek(address)
 				faultMessage := address + 1
-				faultString := env.mem.getString(faultMessage, 0)
+				faultString := env.mem.peekString(faultMessage, 0)
 
 				env.mem.Poke(zpAccumulator, a)
 				env.mem.pokeWord(zpErrorPointer, address)

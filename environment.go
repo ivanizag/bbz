@@ -93,7 +93,7 @@ func (env *environment) initLanguage(slot uint8) {
 	/*
 		The MOS also automatically prints the ROM's title string (&8009) so that the user is acknowledged.
 	*/
-	language := env.mem.getString(romTitleString, 0)
+	language := env.mem.peekString(romTitleString, 0)
 	fmt.Printf("%s\n", language)
 
 	_, x, y, p := env.cpu.GetAXYP()
@@ -131,7 +131,7 @@ func (env *environment) storeError(address uint16, code uint8, msg string, maxMs
 	*/
 	env.mem.Poke(address, 0x00 /* BRK opcode */)
 	env.mem.Poke(address+1, code)
-	env.mem.storeString(address+2, msg, 0, uint8(maxMsgLen))
+	env.mem.pokeString(address+2, msg, 0, uint8(maxMsgLen))
 
 }
 

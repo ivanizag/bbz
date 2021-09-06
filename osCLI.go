@@ -51,7 +51,7 @@ func execOSCLI(env *environment) {
 		carriage return character (ASCII &0D/13)
 	*/
 	xy := uint16(x) + uint16(y)<<8
-	lineNotTerminated := env.mem.getString(xy, 0x0d)
+	lineNotTerminated := env.mem.peekString(xy, 0x0d)
 	line := lineNotTerminated + "\r"
 	pos := 0
 
@@ -235,7 +235,7 @@ func execOSCLI(env *environment) {
 		for i := 0xf; i >= 0; i-- {
 			if env.mem.writeProtectRom[i] {
 				env.mem.Poke(sheilaRomLatch, uint8(i))
-				name := env.mem.getString(romTitleString, 0)
+				name := env.mem.peekString(romTitleString, 0)
 				if name == "" {
 					fmt.Printf("ROM %X ?\n", i)
 				} else {

@@ -42,7 +42,7 @@ func execOSFILE(env *environment) {
 	startAddress := env.mem.peekDoubleWord(controlBlock + cbStartAddressOrSize)
 	endAddress := env.mem.peekDoubleWord(controlBlock + cbEndAddressOrAttributes)
 
-	filename := env.mem.getString(filenameAddress, 0x0d)
+	filename := env.mem.peekString(filenameAddress, 0x0d)
 
 	newA := uint8(0) // Nothing found
 	option := ""
@@ -130,7 +130,7 @@ func loadFile(env *environment, filename string, loadAddress uint32) fileAttribu
 	}
 
 	// NOTE: There is no maxLength?
-	env.mem.storeSlice(uint16(loadAddress), uint16(len(data)), data)
+	env.mem.pokeSlice(uint16(loadAddress), uint16(len(data)), data)
 	return attr
 }
 
@@ -139,7 +139,7 @@ func saveFile(env *environment, filename string, startAddress uint32, endAddress
 	attr.loadAddress = startAddress
 	attr.fileSize = endAddress - startAddress
 
-	data := env.mem.getSlice(uint16(attr.loadAddress), uint16(attr.fileSize))
+	data := env.mem.peekSlice(uint16(attr.loadAddress), uint16(attr.fileSize))
 	err := ioutil.WriteFile(filename, data, 0644)
 	if err != nil {
 		env.raiseError(errorTodo, err.Error())
