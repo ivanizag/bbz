@@ -10,7 +10,8 @@ import (
 
 func main() {
 	fmt.Printf("bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz\n")
-	fmt.Printf("(tip: uppercase is usually needed)\n\n")
+	fmt.Printf("(tip: uppercase is usually needed)\n")
+	fmt.Printf("(press control-c twice to exit)\n\n")
 
 	traceCPU := flag.Bool(
 		"c",
@@ -82,10 +83,11 @@ func main() {
 
 func handleControlC(env *environment) {
 	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
-		<-c
-		env.close()
-		os.Exit(0)
+		for {
+			<-c
+			env.escape()
+		}
 	}()
 }

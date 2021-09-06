@@ -25,7 +25,8 @@ type environment struct {
 	file [maxFiles]*os.File
 
 	// behaviour
-	stop bool
+	stop                bool
+	lastEscapeTimestamp time.Time
 
 	// configuration
 	apiLog     bool
@@ -38,11 +39,12 @@ func newEnvironment(cpuLog bool, apiLog bool, apiLogIO bool, memLog bool, panicO
 	if rawline {
 		env.con = newConsoleSimple()
 	} else {
-		env.con = newConsoleLiner()
+		env.con = newConsoleLiner(&env)
 	}
 	env.referenceTime = time.Now()
 	env.timer = 0
 	env.lastTimerUpdate = time.Now()
+	env.lastEscapeTimestamp = time.Now()
 	env.mem = newAcornMemory(memLog)
 	env.cpu = core6502.NewNMOS6502(env.mem)
 	//env.cpu = core6502.NewCMOS65c02(env.mem)
@@ -56,6 +58,18 @@ func newEnvironment(cpuLog bool, apiLog bool, apiLogIO bool, memLog bool, panicO
 
 func (env *environment) close() {
 	env.con.close()
+}
+
+func (env *environment) escape() {
+	timestamp := time.Now()
+	delay := timestamp.Sub(env.lastEscapeTimestamp)
+	if delay.Milliseconds() < controlCDelayToQuitMs {
+		// Two control-c in fast succession, quit
+		env.close()
+		os.Exit(0)
+	}
+	env.lastEscapeTimestamp = timestamp
+	env.mem.Poke(zpEscapeFlag, 0x80)
 }
 
 func (env *environment) getFile(handle uint8) *os.File {

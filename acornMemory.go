@@ -74,6 +74,10 @@ func (m *acornMemory) PeekCode(address uint16) uint8 {
 }
 
 func memoryArea(address uint16) string {
+	if address == 0x00ff {
+		return "ESCAPE"
+	}
+
 	switch address >> 8 {
 	//case 0x00:
 	//	return "ZEROPAGE"

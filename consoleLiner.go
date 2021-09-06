@@ -15,12 +15,14 @@ const historyFilename = ".bbzhistory"
 type consoleLiner struct {
 	liner  *liner.State
 	prompt string
+	env    *environment
 }
 
-func newConsoleLiner() *consoleLiner {
+func newConsoleLiner(env *environment) *consoleLiner {
 	var c consoleLiner
 
 	c.liner = liner.NewLiner()
+	c.env = env
 	c.liner.SetCtrlCAborts(true)
 	if f, err := os.Open(historyFilename); err == nil {
 		c.liner.ReadHistory(f)
@@ -48,7 +50,11 @@ func (c *consoleLiner) readline() (string, bool) {
 		line, err = c.liner.Prompt("")
 	}
 	c.prompt = ""
-	if err == liner.ErrPromptAborted || err == io.EOF {
+	if errors.Is(err, liner.ErrPromptAborted) {
+		c.env.escape()
+		return "", false
+	}
+	if errors.Is(err, io.EOF) {
 		return "", true
 	}
 	if err != nil {

@@ -12,9 +12,15 @@ services them as a native console application on the host.
 This is not a BBC Micro emulator. It does not emulate the BBC Micro
 hardware, just the 6502 processor.
 
-This program is heavily inspired on [Applecorn](https://github.com/bobbimanners/Applecorn), "a ProDOS application for the
-Apple //e Enhanced which provides an environment for Acorn BBC Microcomputer
-language ROMs to run."
+BBZ is a console program, it tries to look and feel as a modern console
+application not as a BBC Micro. There is command history accesible with
+the up arrow and control-R. Control-C behaves as the BBC Micro Escape key
+to interrupt long running programs. Control-C twice will exic BBZ back to
+the host.
+
+This program is heavily inspired on [Applecorn](https://github.com/bobbimanners/Applecorn),
+"a ProDOS application for the Apple //e Enhanced which provides an environment
+for Acorn BBC Microcomputer language ROMs to run."
 
 References:
 - [BBC Microcomputer System User Guide](https://archive.org/details/BBCUG)

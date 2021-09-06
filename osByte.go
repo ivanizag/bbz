@@ -111,6 +111,26 @@ func execOSBYTE(env *environment) {
 		*/
 		// We do nothing
 
+	case 0x7c:
+		option = "Clear ESCAPE condition"
+		/*
+			No entry parameters
+			This call clears any ESCAPE condition without any further
+			action. The Tube is informed if active.
+			The ESCAPE flag is stored as the top bit of location &FF and
+			should never be interfered with directly.
+		*/
+		env.mem.Poke(zpEscapeFlag, 0)
+
+	case 0x7d:
+		option = "Set ESCAPE condition"
+		/*
+			No entry parameters
+			This call partially simulates the ESCAPE key being pressed. The
+			Tube is informed (if active). An ESCAPE event is not generated.
+		*/
+		env.mem.Poke(zpEscapeFlag, 0x80)
+
 	case 0x7e:
 		option = "Ack detection of an ESC condition"
 		/*
@@ -119,7 +139,13 @@ func execOSBYTE(env *environment) {
 			on exit, X=255 if the ESCAPE condition existed (X=0 otherwise), A is
 			preserved, Y and C are undefined
 		*/
-		newX = 0
+		escape := env.mem.Peek(zpEscapeFlag)
+		if escape&0x80 == 0 {
+			newX = 0
+		} else {
+			newX = 0xff
+		}
+		env.mem.Poke(zpEscapeFlag, 0)
 
 	case 0x7f:
 		option = "Check for end-of-file on an opened file"

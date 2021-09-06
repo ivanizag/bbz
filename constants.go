@@ -24,6 +24,7 @@ const (
 	zpROMSelect    uint16 = 0x00f4
 	zpAccumulator  uint16 = 0x00fc
 	zpErrorPointer uint16 = 0x00fd
+	zpEscapeFlag   uint16 = 0x00ff
 
 	vectorBRK    uint16 = 0x0202
 	romTypeTable uint16 = 0x023a
@@ -94,4 +95,7 @@ const (
 	sheilaRomLatch uint16 = 0xfe30
 
 	maxFiles = 5
+
+	// Maximim delay to detect a double control C to quit
+	controlCDelayToQuitMs = 500
 )
