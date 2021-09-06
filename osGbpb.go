@@ -47,9 +47,9 @@ func execOSGBPB(env *environment) {
 
 		controlBlock := uint16(x) + uint16(y)<<8
 		handle := env.mem.Peek(controlBlock)
-		address := uint32(env.mem.peeknbytes(controlBlock+cbDataAddress, 4))
-		count := uint32(env.mem.peeknbytes(controlBlock+cbDataCount, 4))
-		offset := uint32(env.mem.peeknbytes(controlBlock+cbDataOffset, 4))
+		address := env.mem.peekDoubleWord(controlBlock + cbDataAddress)
+		count := env.mem.peekDoubleWord(controlBlock + cbDataCount)
+		offset := env.mem.peekDoubleWord(controlBlock + cbDataOffset)
 
 		error := false
 		file := env.getFile(handle)
@@ -91,9 +91,9 @@ func execOSGBPB(env *environment) {
 		}
 
 		// Update the file control block
-		env.mem.pokenbytes(controlBlock+cbDataAddress, 4, uint64(address+transferred))
-		env.mem.pokenbytes(controlBlock+cbDataCount, 4, uint64(count-transferred))
-		env.mem.pokenbytes(controlBlock+cbDataOffset, 4, uint64(offset+transferred))
+		env.mem.pokeDoubleWord(controlBlock+cbDataAddress, address+transferred)
+		env.mem.pokeDoubleWord(controlBlock+cbDataCount, count-transferred)
+		env.mem.pokeDoubleWord(controlBlock+cbDataOffset, offset+transferred)
 
 		newP := p
 		if count-transferred != 0 {

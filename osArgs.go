@@ -48,12 +48,12 @@ func execOSARGS(env *environment) {
 		if err != nil {
 			env.raiseError(errorTodo, err.Error())
 		} else {
-			env.mem.pokenbytes(uint16(x), 4, uint64(pos))
+			env.mem.pokeDoubleWord(uint16(x), uint32(pos))
 		}
 		env.log(fmt.Sprintf("OSARGS('Get PTR#',FILE=%v) => %v", y, pos))
 
 	case 1: // Write sequential pointer of file
-		pos := int64(env.mem.peeknbytes(uint16(x), 4))
+		pos := int64(env.mem.peekDoubleWord(uint16(x)))
 		_, err := file.Seek(pos, io.SeekStart)
 		if err != nil {
 			env.raiseError(errorTodo, err.Error())
@@ -65,7 +65,7 @@ func execOSARGS(env *environment) {
 		if err != nil {
 			env.raiseError(errorTodo, err.Error())
 		} else {
-			env.mem.pokenbytes(uint16(x), 4, uint64(info.Size()))
+			env.mem.pokeDoubleWord(uint16(x), uint32(info.Size()))
 		}
 		env.log(fmt.Sprintf("OSARGS('Get EXT#',FILE=%v)=%v", y, info.Size()))
 

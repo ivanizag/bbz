@@ -168,6 +168,20 @@ func (m *acornMemory) pokeWord(address uint16, value uint16) {
 	m.Poke(address+1, uint8(value>>8))
 }
 
+func (m *acornMemory) peekDoubleWord(address uint16) uint32 {
+	return uint32(m.Peek(address)) +
+		uint32(m.Peek(address+1))<<8 +
+		uint32(m.Peek(address+2))<<16 +
+		uint32(m.Peek(address+3))<<24
+}
+
+func (m *acornMemory) pokeDoubleWord(address uint16, value uint32) {
+	m.Poke(address, uint8(value))
+	m.Poke(address+1, uint8(value>>8))
+	m.Poke(address+2, uint8(value>>16))
+	m.Poke(address+3, uint8(value>>24))
+}
+
 func (m *acornMemory) peeknbytes(address uint16, n int) uint64 {
 	ticks := uint64(0)
 	for i := n - 1; i >= 0; i-- {

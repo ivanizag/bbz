@@ -37,10 +37,10 @@ func execOSFILE(env *environment) {
 	// See: http://beebwiki.mdfs.net/OSFILE
 	controlBlock := uint16(x) + uint16(y)<<8
 	filenameAddress := env.mem.peekWord(controlBlock)
-	loadAddress := uint32(env.mem.peeknbytes(controlBlock+cbLoadAddress, 4))
-	executionAddress := uint32(env.mem.peeknbytes(controlBlock+cbExecutionAddress, 4))
-	startAddress := uint32(env.mem.peeknbytes(controlBlock+cbStartAddressOrSize, 4))
-	endAddress := uint32(env.mem.peeknbytes(controlBlock+cbEndAddressOrAttributes, 4))
+	loadAddress := env.mem.peekDoubleWord(controlBlock + cbLoadAddress)
+	executionAddress := env.mem.peekDoubleWord(controlBlock + cbExecutionAddress)
+	startAddress := env.mem.peekDoubleWord(controlBlock + cbStartAddressOrSize)
+	endAddress := env.mem.peekDoubleWord(controlBlock + cbEndAddressOrAttributes)
 
 	filename := env.mem.getString(filenameAddress, 0x0d)
 
@@ -65,10 +65,10 @@ func execOSFILE(env *environment) {
 		*/
 		attr := getFileAttributes(env, filename)
 		if attr.fileType != osNotFound {
-			env.mem.pokenbytes(controlBlock+cbStartAddressOrSize, 4, uint64(attr.fileSize))
+			env.mem.pokeDoubleWord(controlBlock+cbStartAddressOrSize, attr.fileSize)
 			if attr.hasMetadata {
-				env.mem.pokenbytes(controlBlock+cbLoadAddress, 4, uint64(attr.loadAddress))
-				env.mem.pokenbytes(controlBlock+cbExecutionAddress, 4, uint64(attr.executionAddress))
+				env.mem.pokeDoubleWord(controlBlock+cbLoadAddress, attr.loadAddress)
+				env.mem.pokeDoubleWord(controlBlock+cbExecutionAddress, attr.executionAddress)
 			}
 		}
 		newA = attr.fileType
@@ -89,7 +89,7 @@ func execOSFILE(env *environment) {
 		}
 
 		attr := loadFile(env, filename, loadAddress)
-		env.mem.pokenbytes(controlBlock+cbStartAddressOrSize, 4, uint64(attr.fileSize))
+		env.mem.pokeDoubleWord(controlBlock+cbStartAddressOrSize, attr.fileSize)
 		newA = attr.fileType
 
 	default:
