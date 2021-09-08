@@ -14,12 +14,14 @@ type console interface {
 }
 
 type consoleSimple struct {
-	in *bufio.Scanner
+	in  *bufio.Scanner
+	env *environment
 }
 
-func newConsoleSimple() *consoleSimple {
+func newConsoleSimple(env *environment) *consoleSimple {
 	var c consoleSimple
 	c.in = bufio.NewScanner(os.Stdin)
+	c.env = env
 	return &c
 }
 
@@ -28,6 +30,8 @@ func (c *consoleSimple) readline() (string, bool) {
 		return "", true
 	}
 	line := c.in.Text()
+	c.env.writeSpool(line)
+	c.env.writeSpool("\n")
 	return line, false
 }
 
@@ -44,6 +48,7 @@ func (c *consoleSimple) readChar() (uint8, bool) {
 
 func (c *consoleSimple) write(s string) {
 	fmt.Print(s)
+	c.env.writeSpool(s)
 }
 
 func (c *consoleSimple) close() {}

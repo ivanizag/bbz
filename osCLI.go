@@ -21,6 +21,7 @@ var cliCommands = []string{
 	"BASIC",
 	"CODE",
 	"DIR",
+	"DELETE",
 	"EXEC",
 	"HELP",
 	"HOST", // Added for bbz
@@ -96,16 +97,13 @@ func execOSCLI(env *environment) {
 	args = strings.TrimRight(args, " \r")
 	unhandled := false
 
-	env.log(fmt.Sprintf("OSCLI('%s', CMD='%s')", lineNotTerminated, command))
+	env.log(fmt.Sprintf("OSCLI('%s', CMD='%s', ARGS='%s')", lineNotTerminated, command, args))
 
 	switch command {
-	case "CAT":
-		// TODO
-		fmt.Println("\n<<directory placeholder>>")
 
 	case "FX":
 		params := strings.Split(args, ",")
-		if len(params) == 0 || len(params) > 3 {
+		if params[0] == "" || len(params) > 3 {
 			env.raiseError(254, "Bad Command")
 			break
 		}
@@ -128,8 +126,23 @@ func execOSCLI(env *environment) {
 			}
 		}
 
+	case "CAT":
+		// TODO
+		fmt.Println("\n<<directory placeholder>>")
+
 	case "CODE":
 		execOSCLIfx(env, 0x88, strings.Split(args, ","))
+
+	case "DELETE":
+		params := strings.Split(args, " ")
+		if params[0] != "" {
+			// Activate spool
+			filename := cleanFilename(params[0])
+			err := os.Remove(filename)
+			if err != nil {
+				env.raiseError(errorTodo, err.Error())
+			}
+		}
 
 	case "DIR":
 		dest := args
@@ -194,7 +207,7 @@ func execOSCLI(env *environment) {
 		filename := cleanFilename(params[0])
 		loadAddress := loadAddressNull
 		if len(params) >= 2 {
-			i, err := strconv.ParseInt(params[1], 16, 32)
+			i, err := strconv.ParseUint(params[1], 16, 32)
 			if err != nil {
 				env.raiseError(252, "Bad address")
 				break
@@ -268,7 +281,7 @@ func execOSCLI(env *environment) {
 
 		filename := cleanFilename(params[0])
 
-		i, err := strconv.ParseInt(params[1], 16, 32)
+		i, err := strconv.ParseUint(params[1], 16, 32)
 		if err != nil {
 			env.raiseError(252, "Bad address")
 			break
@@ -280,7 +293,7 @@ func execOSCLI(env *environment) {
 			isSize = true
 			params[2] = params[2][1:]
 		}
-		i, err = strconv.ParseInt(params[2], 16, 32)
+		i, err = strconv.ParseUint(params[2], 16, 32)
 		if err != nil {
 			env.raiseError(252, "Bad address")
 			break
@@ -291,12 +304,28 @@ func execOSCLI(env *environment) {
 		}
 
 		if len(params) > 3 {
-			env.notImplemented("*SAVE with execution o reload address")
+			env.notImplemented("*SAVE with execution or reload address")
 		}
 
-		saveFile(env, filename, startAddress, endAddress)
+		saveFile(env, filename, startAddress, startAddress, startAddress, endAddress)
 
-	// case "SPOOL":
+	case "SPOOL":
+		// *SPOOL filename
+		// *SPOOL
+		spoolFile := env.mem.Peek(spoolFileHandle)
+		if spoolFile != 0 {
+			env.closeFile(spoolFile)
+			env.mem.Poke(spoolFileHandle, 0)
+		}
+
+		params := strings.Split(args, " ")
+		if params[0] != "" {
+			// Activate spool
+			filename := cleanFilename(params[0])
+			spoolFile := env.openFile(filename, 0x80 /*open for output*/)
+			env.mem.Poke(spoolFileHandle, spoolFile)
+		}
+
 	case "TAPE":
 		execOSCLIfx(env, 0x8c, strings.Split(args, ","))
 	case "TV":

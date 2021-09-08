@@ -77,6 +77,9 @@ func memoryArea(address uint16) string {
 	if address == 0x00ff {
 		return "ESCAPE"
 	}
+	if address >= mosVariablesStart && address <= mosVariablesEnd {
+		return "MOSVARS"
+	}
 
 	switch address >> 8 {
 	//case 0x00:

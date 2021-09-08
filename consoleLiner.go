@@ -63,6 +63,8 @@ func (c *consoleLiner) readline() (string, bool) {
 	if line != "" {
 		c.liner.AppendHistory(line)
 	}
+	c.env.writeSpool(line)
+	c.env.writeSpool("\n")
 	return line, false
 }
 
@@ -84,4 +86,5 @@ func (c *consoleLiner) write(s string) {
 		c.prompt += s
 	}
 	fmt.Print(s)
+	c.env.writeSpool(s)
 }

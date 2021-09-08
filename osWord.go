@@ -103,7 +103,7 @@ func execOSWORD(env *environment) {
 		env.logIO(fmt.Sprintf("OSWORD05('Read I/O processor memory',ADDRESS=0x%08x) => 0x%02x",
 			address, value))
 
-	case 0x06: // Write i/O processor memory
+	case 0x06: // Write I/O processor memory
 		/*
 			This call permits I/O processor memory to be written across the Tube. A 32 bit
 			address is contained in the parameter block addressed by the X and Y registers

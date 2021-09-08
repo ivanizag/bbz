@@ -53,7 +53,10 @@ func execOSFILE(env *environment) {
 			Save a block of memory as a file using the
 			information provided in the parameter block.
 		*/
-		attr := saveFile(env, filename, startAddress, endAddress)
+		attr := saveFile(env, filename, loadAddress, executionAddress, startAddress, endAddress)
+		if attr.fileType != osNotFound {
+			updateControlBlock(env, controlBlock, attr)
+		}
 		newA = attr.fileType
 
 	case 5:
@@ -65,11 +68,7 @@ func execOSFILE(env *environment) {
 		*/
 		attr := getFileAttributes(env, filename)
 		if attr.fileType != osNotFound {
-			env.mem.pokeDoubleWord(controlBlock+cbStartAddressOrSize, attr.fileSize)
-			if attr.hasMetadata {
-				env.mem.pokeDoubleWord(controlBlock+cbLoadAddress, attr.loadAddress)
-				env.mem.pokeDoubleWord(controlBlock+cbExecutionAddress, attr.executionAddress)
-			}
+			updateControlBlock(env, controlBlock, attr)
 		}
 		newA = attr.fileType
 
@@ -89,7 +88,10 @@ func execOSFILE(env *environment) {
 		}
 
 		attr := loadFile(env, filename, loadAddress)
-		env.mem.pokeDoubleWord(controlBlock+cbStartAddressOrSize, attr.fileSize)
+		//env.mem.pokeDoubleWord(controlBlock+cbStartAddressOrSize, attr.fileSize)
+		if attr.fileType != osNotFound {
+			updateControlBlock(env, controlBlock, attr)
+		}
 		newA = attr.fileType
 
 	default:
@@ -104,7 +106,17 @@ func execOSFILE(env *environment) {
 
 }
 
-func loadFile(env *environment, filename string, loadAddress uint32) fileAttributes {
+func updateControlBlock(env *environment, controlBlock uint16, attr *fileAttributes) {
+	if attr.fileType != osNotFound {
+		env.mem.pokeDoubleWord(controlBlock+cbStartAddressOrSize, attr.fileSize)
+		if attr.hasMetadata {
+			env.mem.pokeDoubleWord(controlBlock+cbLoadAddress, attr.loadAddress)
+			env.mem.pokeDoubleWord(controlBlock+cbExecutionAddress, attr.executionAddress)
+		}
+	}
+}
+
+func loadFile(env *environment, filename string, loadAddress uint32) *fileAttributes {
 	attr := getFileAttributes(env, filename)
 	if attr.fileType == osNotFound {
 		return attr
@@ -120,8 +132,11 @@ func loadFile(env *environment, filename string, loadAddress uint32) fileAttribu
 			attr.fileType = osNotFound
 			return attr
 		}
-		loadAddress = uint32(attr.loadAddress)
+		loadAddress = attr.loadAddress
+	} else {
+		attr.loadAddress = loadAddress
 	}
+
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		env.raiseError(errorTodo, err.Error())
@@ -129,17 +144,19 @@ func loadFile(env *environment, filename string, loadAddress uint32) fileAttribu
 		return attr
 	}
 
-	// NOTE: There is no maxLength?
 	env.mem.pokeSlice(uint16(loadAddress), uint16(len(data)), data)
 	return attr
 }
 
-func saveFile(env *environment, filename string, startAddress uint32, endAddress uint32) fileAttributes {
+func saveFile(env *environment, filename string,
+	loadAddress uint32, executionAddress uint32, startAddress uint32, endAddress uint32) *fileAttributes {
+
 	var attr fileAttributes
-	attr.loadAddress = startAddress
+	attr.loadAddress = loadAddress
+	attr.executionAddress = executionAddress
 	attr.fileSize = endAddress - startAddress
 
-	data := env.mem.peekSlice(uint16(attr.loadAddress), uint16(attr.fileSize))
+	data := env.mem.peekSlice(uint16(startAddress), uint16(attr.fileSize))
 	err := ioutil.WriteFile(filename, data, 0644)
 	if err != nil {
 		env.raiseError(errorTodo, err.Error())
@@ -147,22 +164,26 @@ func saveFile(env *environment, filename string, startAddress uint32, endAddress
 	} else {
 		attr.fileType = osFileFound
 	}
-	return attr
+
+	// Write metadata file
+	// $.BasObj     003000 003100 005000 00 CRC32=614721E1
+	metadata := fmt.Sprintf("$.FILE    %08X %08X %08X", attr.loadAddress, attr.executionAddress, attr.fileSize)
+	ioutil.WriteFile(filename+".inf", []byte(metadata), 0644)
+
+	return &attr
 }
 
-func getFileAttributes(env *environment, filename string) fileAttributes {
+func getFileAttributes(env *environment, filename string) *fileAttributes {
 	var attr fileAttributes
 
 	fileInfo, err := os.Stat(filename)
 	if errors.Is(err, os.ErrNotExist) {
 		attr.fileType = osNotFound
-		env.raiseError(214, "File not found")
-		return attr
+		return &attr
 	}
 	if err != nil {
 		attr.fileType = osNotFound
-		env.raiseError(errorTodo, err.Error())
-		return attr
+		return &attr
 	}
 
 	attr.fileSize = uint32(fileInfo.Size())
@@ -178,28 +199,28 @@ func getFileAttributes(env *environment, filename string) fileAttributes {
 	attr.hasMetadata = false
 	data, err := os.ReadFile(filename + ".inf")
 	if errors.Is(err, os.ErrNotExist) {
-		return attr
+		return &attr
 	}
 	parts := strings.Fields(string(data))
 	if len(parts) < 3 {
 		env.log(fmt.Sprintf("Invalid format for metadata file %s.inf, missing fields", filename))
-		return attr
+		return &attr
 	}
 
-	i, err := strconv.ParseInt(parts[1], 16, 32)
+	i, err := strconv.ParseUint(parts[1], 16, 64)
 	if err != nil {
-		env.log(fmt.Sprintf("Invalid format for metadata file %s.inf, bad load address", filename))
-		return attr
+		env.log(fmt.Sprintf("Invalid format for metadata file %s.inf, bad load address '%s'", filename, err.Error()))
+		return &attr
 	}
 	attr.loadAddress = uint32(i)
 
-	i, err = strconv.ParseInt(parts[2], 16, 32)
+	i, err = strconv.ParseUint(parts[2], 16, 64)
 	if err != nil {
-		env.log(fmt.Sprintf("Invalid format for metadata file %s.inf, bad exec address", filename))
-		return attr
+		env.log(fmt.Sprintf("Invalid format for metadata file %s.inf, bad exec address '%s'", filename, err.Error()))
+		return &attr
 	}
 	attr.executionAddress = uint32(i)
 
 	attr.hasMetadata = true
-	return attr
+	return &attr
 }

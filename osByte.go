@@ -47,7 +47,7 @@ func execOSBYTE(env *environment) {
 		/*
 			On entry, the value in X determines the output device to be selected
 		*/
-		// We do nothing
+		env.mem.Poke(charDestinations, x)
 
 	case 0x04:
 		option = "Enable/disable cursor editing"
@@ -216,7 +216,7 @@ func execOSBYTE(env *environment) {
 		} else if y == 0xff && x == 0 {
 			option = "Check machine type"
 			// See: http://beebwiki.mdfs.net/INKEY
-			newX = 0x2a // BBZ, not currently reserved
+			newX = 0x28 // BBZ, not currently reserved
 		} else {
 			option = "Undefined use of OSBYTE81"
 		}
@@ -300,20 +300,7 @@ func execOSBYTE(env *environment) {
 			newY = 39 // Pascal editor only works with 80 columns
 		}
 
-	case 0xca:
-		option = "Read/write keyboard status byte"
-		/*
-			The old value is returned in X. The contents of the next location are returned in Y.
-				bit 3: 1 if SHIFT is pressed.
-				bit 4: 0 if CAPS LOCK is engaged.
-				bit 5: 0 if SHIFT LOCK is engaged.
-				bit 6: 1 if CTRL is pressed.
-				bit 7: 1 SHIFT enabled, if a LOCK key is engaged then SHIFT reverses the LOCK.
-		*/
-		// Not implemented. Just returns O.
-		newX = 0
-		newY = 0
-
+	// Starting from a = 0xa6, we are reading mos variables.
 	case 0xda:
 		option = "R/W number of items in VDU"
 		/*
@@ -327,17 +314,6 @@ func execOSBYTE(env *environment) {
 			env.notImplemented("OSBYTEda for x or y not zero")
 		}
 
-	case 0xea:
-		option = "R/W Tube present flag"
-		/*
-			The value 255 indicates the Tube is present 0 indicates it is not.
-			Writing to this value is not recommended.
-
-			We return 0 always
-		*/
-		newX = 0
-		newY = 0
-
 	case 0xfd:
 		option = "Read hard/soft break"
 		/*
@@ -350,14 +326,33 @@ func execOSBYTE(env *environment) {
 		newY = 2
 
 	default:
-		// Send to the other ROMS if available.
-		env.mem.Poke(zpA, a)
-		env.mem.Poke(zpX, x)
-		env.mem.Poke(zpY, y)
-		newA = serviceOSBYTE
-		env.cpu.SetPC(procServiceRoms)
-		env.log(fmt.Sprintf("OSBYTE%02x_to_roms(X=0x%02x,Y=0x%02x)", a, x, y))
-		// procServiceRoms issues a 254-Bad command if the command is not handled by any ROM
+		if a >= 0xa6 {
+			option = "Read/write system variable"
+			/*
+				Set newValue = (oldValue AND Y) EOR X
+				On Entry:
+					A = offset from MosVariablesstart - 166, X, Y
+				 On Exit:
+				       X = oldValue
+				       Y = value of next system variable
+			*/
+			address := mosVariablesStart + uint16(a) - 0xa6
+			oldValue := env.mem.Peek(address)
+			newValue := (oldValue & y) ^ x
+			env.mem.Poke(address, newValue)
+
+			newX = oldValue
+			newY = env.mem.Peek(address + 1)
+		} else {
+			// Send to the other ROMS if available.
+			env.mem.Poke(zpA, a)
+			env.mem.Poke(zpX, x)
+			env.mem.Poke(zpY, y)
+			newA = serviceOSBYTE
+			env.cpu.SetPC(procServiceRoms)
+			env.log(fmt.Sprintf("OSBYTE%02x_to_roms(X=0x%02x,Y=0x%02x)", a, x, y))
+			// procServiceRoms issues a 254-Bad command if the command is not handled by any ROM
+		}
 	}
 
 	env.cpu.SetAXYP(newA, newX, newY, newP)

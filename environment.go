@@ -37,7 +37,7 @@ type environment struct {
 func newEnvironment(cpuLog bool, apiLog bool, apiLogIO bool, memLog bool, panicOnErr bool, rawline bool) *environment {
 	var env environment
 	if rawline {
-		env.con = newConsoleSimple()
+		env.con = newConsoleSimple(&env)
 	} else {
 		env.con = newConsoleLiner(&env)
 	}
@@ -70,16 +70,6 @@ func (env *environment) escape() {
 	}
 	env.lastEscapeTimestamp = timestamp
 	env.mem.Poke(zpEscapeFlag, 0x80)
-}
-
-func (env *environment) getFile(handle uint8) *os.File {
-	i := handle - 1
-	if i < maxFiles && env.file[i] != nil {
-		return env.file[i]
-	}
-
-	env.raiseError(222, "Channel")
-	return nil
 }
 
 func (env *environment) initUpperLanguage() {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 )
 
 func execOSFIND(env *environment) {
@@ -41,27 +40,12 @@ func execOSFIND(env *environment) {
 	if a == 0 {
 		// Close file
 		if y == 0 {
-			// Close all files
-			for i := 0; i < maxFiles; i++ {
-				if env.file[i] != nil {
-					err := env.file[i].Close()
-					if err != nil {
-						env.raiseError(errorTodo, err.Error())
-					}
-					env.file[i] = nil
-				}
+			for i := uint8(0); i < maxFiles; i++ {
+				env.closeFile(i + 1)
 			}
 			env.log("OSFIND('Close all files')")
 		} else {
-			// Close y
-			file := env.getFile(y)
-			if file != nil {
-				err := file.Close()
-				if err != nil {
-					env.raiseError(errorTodo, err.Error())
-				}
-				env.file[y-1] = nil
-			}
+			env.closeFile(y)
 			env.log(fmt.Sprintf("OSFIND('Close file',FILE=%v)", y))
 		}
 		return
@@ -70,37 +54,9 @@ func execOSFIND(env *environment) {
 	// Open file
 	address := uint16(x) + uint16(y)<<8
 	filename := env.mem.peekString(address, 0x0d)
-
-	// Find the first free file handle
-	handle := -1
-	for i := 0; i < maxFiles; i++ {
-		if env.file[i] == nil {
-			handle = i
-			break
-		}
-	}
-	if handle == -1 {
-		env.raiseError(190, "Catalogue full")
-	} else {
-		var err error
-		switch a {
-		case 0x40: // Open file for input only
-			env.file[handle], err = os.Open(filename)
-		case 0x80: // Open file for output only
-			env.file[handle], err = os.Create(filename)
-		case 0xc0: // Open file of update
-			env.file[handle], err = os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0644)
-		default:
-			env.raiseError(errorTodo, fmt.Sprintf("Unknown open mode for OSFIND 0x%02x", a))
-			handle = -1
-		}
-		if err != nil {
-			env.raiseError(errorTodo, err.Error())
-			handle = -1
-		}
-	}
-	env.cpu.SetAXYP(uint8(handle+1), x, y, p)
+	file := env.openFile(filename, a)
+	env.cpu.SetAXYP(file, x, y, p)
 
 	env.log(fmt.Sprintf("OSFIND('Open file',FILE='%s',MODE=0x%02x)=%v",
-		filename, a, handle+1))
+		filename, a, file))
 }
