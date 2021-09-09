@@ -132,10 +132,7 @@ func execOSCLI(env *environment) {
 		}
 
 		if filename != "" {
-			err := os.Remove(filename)
-			if err != nil {
-				env.raiseError(errorTodo, err.Error())
-			}
+			deleteFile(env, filename)
 		}
 
 	case "DIR":
@@ -150,11 +147,12 @@ func execOSCLI(env *environment) {
 			break
 			/*
 				var err error
-				dest, err = os.UserHomeDir()
+				path, err = os.UserHomeDir()
 				if err != nil {
 					env.raiseError(errorTodo, err.Error())
 					break
 				}
+
 			*/
 		}
 

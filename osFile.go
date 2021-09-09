@@ -117,15 +117,7 @@ func execOSFILE(env *environment) {
 			a directory that is not empty, or is open, then an error
 			is generated.
 		*/
-		err := os.Remove(filename)
-		var pathError *os.PathError
-		if errors.As(err, &pathError) {
-			newA = osNotFound
-		} else if err != nil {
-			env.raiseError(errorTodo, err.Error())
-		} else {
-			newA = osFileFound
-		}
+		newA = deleteFile(env, filename)
 
 	case 7:
 		option = "Create an empty file of defined length"
@@ -252,6 +244,21 @@ func saveFile(env *environment, filename string,
 
 	writeMetada(env, filename, &attr)
 	return &attr
+}
+
+func deleteFile(env *environment, filename string) uint8 {
+	err := os.Remove(filename)
+	var pathError *os.PathError
+	if errors.As(err, &pathError) {
+		return osNotFound
+	}
+	if err != nil {
+		env.raiseError(errorTodo, err.Error())
+		return osNotFound
+	}
+
+	os.Remove(filename + ".inf")
+	return osFileFound
 }
 
 func getFileAttributes(env *environment, filename string) *fileAttributes {

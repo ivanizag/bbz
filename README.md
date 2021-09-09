@@ -27,6 +27,7 @@ References:
 - The Advanced User Guide for the BBC Microcomputer
 - [Applecorn source code](https://github.com/bobbimanners/Applecorn)
 - [The MOS Reassembly for the BBC Micro](https://tobylobster.github.io/mos/mos/index.html)
+- [beeb-fstest test suite](https://github.com/tom-seddon/beeb-fstest)
 
 ## Features
 - Can run BBC BASIC and most of the language ROMs.
