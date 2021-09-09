@@ -93,7 +93,8 @@ func execOSGBPB(env *environment) {
 		// Update the file control block
 		env.mem.pokeDoubleWord(controlBlock+cbDataAddress, address+transferred)
 		env.mem.pokeDoubleWord(controlBlock+cbDataCount, count-transferred)
-		env.mem.pokeDoubleWord(controlBlock+cbDataOffset, offset+transferred)
+		pos, _ := file.Seek(0, io.SeekCurrent)
+		env.mem.pokeDoubleWord(controlBlock+cbDataOffset, uint32(pos))
 
 		newP := p
 		if count-transferred != 0 {
