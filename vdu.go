@@ -3,7 +3,7 @@ package main
 import "fmt"
 
 type vdu struct {
-	con   console
+	env   *environment
 	queue []uint8
 	mode  uint8
 
@@ -25,7 +25,7 @@ type vdu struct {
 
 var argsNeeded [256]int
 
-func newVdu(con console) *vdu {
+func newVdu(env *environment) *vdu {
 	// Init args needed array, 0 for all except:
 	argsNeeded[1] = 1
 	argsNeeded[17] = 1
@@ -41,7 +41,7 @@ func newVdu(con console) *vdu {
 	argsNeeded[31] = 2
 
 	var v vdu
-	v.con = con
+	v.env = env
 	// Mode 7 on startup
 	v.mode = 7
 	v.m7fgColour = 7 // white
@@ -479,7 +479,7 @@ func (v *vdu) writeInternal(cmd uint8, q []uint8) {
 	}
 
 	if out != "" && !v.ignore {
-		v.con.write(out)
+		v.env.con.write(out)
 	}
 }
 
@@ -504,7 +504,7 @@ func (v *vdu) mode7ResetCode() string {
 }
 
 func (v *vdu) mode7Reset() {
-	fmt.Print(v.mode7ResetCode())
+	v.env.con.write(v.mode7ResetCode())
 }
 
 func adjustAscii(ch uint8) string {

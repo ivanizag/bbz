@@ -58,25 +58,19 @@ func main() {
 
 	}
 
-	env := newEnvironment(*traceCPU,
+	env := newEnvironment(roms, *traceCPU,
 		(*traceMOS) || (*traceMOSFull),
 		*traceMOSFull,
 		*traceMemory,
-		*panicOnErr,
-		*rawline)
+		*panicOnErr)
 	defer env.close()
 	handleControlC(env)
 
-	env.mem.loadFirmware()
-
-	for i, rom := range roms {
-		if *rom != "" {
-			env.mem.loadRom(*rom, uint8(0xf-i))
-		}
+	if *rawline {
+		env.con = newConsoleSimple(env)
+	} else {
+		env.con = newConsoleLiner(env)
 	}
-
-	env.initUpperLanguage()
-	env.mem.completeWithRam()
 
 	RunMOS(env)
 }

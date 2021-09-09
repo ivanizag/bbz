@@ -34,13 +34,8 @@ type environment struct {
 	panicOnErr bool
 }
 
-func newEnvironment(cpuLog bool, apiLog bool, apiLogIO bool, memLog bool, panicOnErr bool, rawline bool) *environment {
+func newEnvironment(roms []*string, cpuLog bool, apiLog bool, apiLogIO bool, memLog bool, panicOnErr bool) *environment {
 	var env environment
-	if rawline {
-		env.con = newConsoleSimple(&env)
-	} else {
-		env.con = newConsoleLiner(&env)
-	}
 	env.referenceTime = time.Now()
 	env.timer = 0
 	env.lastTimerUpdate = time.Now()
@@ -49,10 +44,20 @@ func newEnvironment(cpuLog bool, apiLog bool, apiLogIO bool, memLog bool, panicO
 	env.cpu = core6502.NewNMOS6502(env.mem)
 	//env.cpu = core6502.NewCMOS65c02(env.mem)
 	env.cpu.SetTrace(cpuLog)
-	env.vdu = newVdu(env.con)
+	env.vdu = newVdu(&env)
 	env.apiLog = apiLog
 	env.apiLogIO = apiLogIO
 	env.panicOnErr = panicOnErr
+
+	env.mem.loadFirmware()
+
+	for i, rom := range roms {
+		if *rom != "" {
+			env.mem.loadRom(*rom, uint8(0xf-i))
+		}
+	}
+	env.mem.completeWithRam()
+
 	return &env
 }
 
@@ -98,7 +103,7 @@ func (env *environment) initLanguage(slot uint8) {
 		The MOS also automatically prints the ROM's title string (&8009) so that the user is acknowledged.
 	*/
 	language := env.mem.peekString(romTitleString, 0)
-	fmt.Printf("%s\n", language)
+	env.con.write(fmt.Sprintf("%s\n", language))
 
 	_, x, y, p := env.cpu.GetAXYP()
 	env.cpu.SetAXYP(1, x, y, p)

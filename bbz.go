@@ -14,6 +14,9 @@ import (
 */
 
 func RunMOS(env *environment) {
+
+	env.initUpperLanguage()
+
 	// Execute
 	for !env.stop {
 		env.cpu.ExecuteInstruction()

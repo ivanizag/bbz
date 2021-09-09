@@ -117,7 +117,7 @@ func execOSCLI(env *environment) {
 
 	case "CAT":
 		// TODO
-		fmt.Println("\n<<directory placeholder>>")
+		env.con.write("\n<<placeholder>>\n")
 
 	case "CODE":
 		execOSCLIfx(env, 0x88, line, pos)
@@ -175,7 +175,7 @@ func execOSCLI(env *environment) {
 	//case "EXEC":
 
 	case "HELP":
-		fmt.Println("\nBBZ 0.0")
+		env.con.write("\nBBZ 0.0\n")
 
 		// Send to the other ROMS if available.
 		env.mem.pokeWord(zpStr, xy)
@@ -195,7 +195,8 @@ func execOSCLI(env *environment) {
 		if err != nil {
 			env.raiseError(errorTodo, err.Error())
 		}
-		fmt.Println(string(stdout))
+		env.con.write(string(stdout))
+		env.con.write("\n")
 
 	case "INFO":
 		filename := ""
@@ -207,9 +208,10 @@ func execOSCLI(env *environment) {
 
 		attr := getFileAttributes(env, filename)
 		if attr.hasMetadata {
-			fmt.Printf("%s\t %06X %06X %06X\n", filename, attr.loadAddress, attr.executionAddress, attr.fileSize)
+			env.con.write(fmt.Sprintf("%s\t %06X %06X %06X\n", filename,
+				attr.loadAddress, attr.executionAddress, attr.fileSize))
 		} else {
-			fmt.Printf("%s\t ?????? ?????? %06X\n", filename, attr.fileSize)
+			env.con.write(fmt.Sprintf("%s\t ?????? ?????? %06X\n", filename, attr.fileSize))
 		}
 
 	// case "KEY":
@@ -267,7 +269,7 @@ func execOSCLI(env *environment) {
 				env.mem.Poke(sheilaRomLatch, uint8(i))
 				name := env.mem.peekString(romTitleString, 0)
 				if name == "" {
-					fmt.Printf("ROM %X ?\n", i)
+					env.con.write(fmt.Sprintf("ROM %X ?\n", i))
 				} else {
 					version := env.mem.Peek(romVersion)
 					romType := env.mem.Peek(romTypeByte)
@@ -280,10 +282,10 @@ func execOSCLI(env *environment) {
 					}
 					attributes += ")"
 
-					fmt.Printf("ROM %X %s %02v %s\n", i, name, version, attributes)
+					env.con.write(fmt.Sprintf("ROM %X %s %02v %s\n", i, name, version, attributes))
 				}
 			} else {
-				fmt.Printf("RAM %X 16K\n", i)
+				env.con.write(fmt.Sprintf("RAM %X 16K\n", i))
 			}
 		}
 		env.mem.Poke(sheilaRomLatch, selectedROM)
