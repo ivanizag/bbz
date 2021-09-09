@@ -32,17 +32,17 @@ func (env *environment) openFile(filename string, mode uint8) uint8 {
 	switch mode {
 	case 0x40: // Open file for input only
 		//env.file[i], err = os.Open(filename)
-		env.file[i], err = os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0644)
+		env.file[i], err = os.OpenFile(filename, os.O_RDONLY /*|os.O_CREATE*/, 0644)
 	case 0x80: // Open file for output only
 		env.file[i], err = os.Create(filename)
-	case 0xc0: // Open file foe update
+	case 0xc0: // Open file for update
 		env.file[i], err = os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0644)
 	default:
 		env.raiseError(errorTodo, fmt.Sprintf("Unknown open mode for OSFIND 0x%02x", mode))
 		i = -1
 	}
 	if err != nil {
-		env.raiseError(errorTodo, err.Error())
+		//env.raiseError(errorTodo, err.Error())
 		i = -1
 	}
 

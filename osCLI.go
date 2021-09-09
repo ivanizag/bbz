@@ -22,6 +22,7 @@ var cliCommands = []string{
 	"CODE",
 	"DIR",
 	"DELETE",
+	"DRIVE",
 	"EXEC",
 	"HELP",
 	"HOST", // Added for bbz
@@ -55,16 +56,11 @@ func execOSCLI(env *environment) {
 	lineNotTerminated := env.mem.peekString(xy, 0x0d)
 	line := lineNotTerminated + "\r"
 	pos := 0
-
-	for line[pos] == ' ' { // Remove initial spaces
-		pos++
-	}
+	pos = parseSkipSpaces(line, pos)
 	if line[pos] == '*' { // Skip '*' if present
 		pos++
 	}
-	for line[pos] == ' ' { // Remove spaces after '*'
-		pos++
-	}
+	pos = parseSkipSpaces(line, pos)
 	if line[pos] == '|' || line[pos] == '\r' { // Ignore "*|" or standalone "*"
 		env.log(fmt.Sprintf("OSCLI('%s', CMD=empty)", lineNotTerminated))
 		return
@@ -90,29 +86,22 @@ func execOSCLI(env *environment) {
 			pos++
 		}
 	}
-	for line[pos] == ' ' { // Remove spaces after command
-		pos++
-	}
-	args := line[pos:]
-	args = strings.TrimRight(args, " \r")
+	pos = parseSkipSpaces(line, pos)
 	unhandled := false
+	valid := false
 
-	env.log(fmt.Sprintf("OSCLI('%s', CMD='%s', ARGS='%s')", lineNotTerminated, command, args))
+	env.log(fmt.Sprintf("OSCLI('%s', CMD='%s', ARGS='%s')", lineNotTerminated, command, lineNotTerminated[pos:]))
 
 	switch command {
 
 	case "FX":
-		params := strings.Split(args, ",")
-		if params[0] == "" || len(params) > 3 {
+		var argA uint8
+		pos, argA, valid = parseByte(line, pos)
+		if !valid {
 			env.raiseError(254, "Bad Command")
 			break
 		}
-		argA, err := strconv.Atoi(strings.TrimSpace(params[0]))
-		if err != nil || (argA&0xff) != argA {
-			env.raiseError(254, "Bad Command")
-			break
-		}
-		execOSCLIfx(env, uint8(argA), params[1:])
+		execOSCLIfx(env, uint8(argA), line, pos)
 
 	case "BASIC":
 		// Runs the first language ROM with no service entry
@@ -131,13 +120,18 @@ func execOSCLI(env *environment) {
 		fmt.Println("\n<<directory placeholder>>")
 
 	case "CODE":
-		execOSCLIfx(env, 0x88, strings.Split(args, ","))
+		execOSCLIfx(env, 0x88, line, pos)
 
 	case "DELETE":
-		params := strings.Split(args, " ")
-		if params[0] != "" {
-			// Activate spool
-			filename := cleanFilename(params[0])
+		// *DELETE filename
+		filename := ""
+		_, filename, valid = parseFilename(line, pos)
+		if !valid {
+			env.raiseError(254, "Bad Command")
+			break
+		}
+
+		if filename != "" {
 			err := os.Remove(filename)
 			if err != nil {
 				env.raiseError(errorTodo, err.Error())
@@ -145,21 +139,38 @@ func execOSCLI(env *environment) {
 		}
 
 	case "DIR":
-		dest := args
-		if len(dest) == 0 {
-			var err error
-			dest, err = os.UserHomeDir()
-			if err != nil {
-				env.raiseError(errorTodo, err.Error())
-				break
-			}
+		path := ""
+		_, path, valid = parseFilename(line, pos)
+		if !valid {
+			env.raiseError(254, "Bad Command")
+			break
 		}
 
-		err := os.Chdir(dest)
+		if path == "" || path == "$" {
+			break
+			/*
+				var err error
+				dest, err = os.UserHomeDir()
+				if err != nil {
+					env.raiseError(errorTodo, err.Error())
+					break
+				}
+			*/
+		}
+
+		err := os.Chdir(path)
 		if err != nil {
 			env.raiseError(206, "Bad directory")
 			break
 		}
+
+	case "DRIVE":
+		var drive uint8
+		_, drive, valid = parseByte(line, pos)
+		if !valid || drive >= 4 {
+			env.raiseError(205, "Bad drive")
+		}
+		// Do nothing. We could use subdirs for drive 1, 2 and 3
 
 	//case "EXEC":
 
@@ -172,6 +183,8 @@ func execOSCLI(env *environment) {
 		env.cpu.SetPC(procOSBYTE_143)
 
 	case "HOST":
+		args := line[pos:]
+		args = strings.TrimSuffix(args, "\r")
 		if len(args) == 0 {
 			env.raiseError(errorTodo, "Command missing for *HOST")
 			break
@@ -185,53 +198,57 @@ func execOSCLI(env *environment) {
 		fmt.Println(string(stdout))
 
 	case "INFO":
-		attr := getFileAttributes(env, args)
+		filename := ""
+		_, filename, valid = parseFilename(line, pos)
+		if !valid {
+			env.raiseError(254, "Bad Command")
+			break
+		}
+
+		attr := getFileAttributes(env, filename)
 		if attr.hasMetadata {
-			fmt.Printf("%s\t %06X %06X %06X\n", args, attr.loadAddress, attr.executionAddress, attr.fileSize)
+			fmt.Printf("%s\t %06X %06X %06X\n", filename, attr.loadAddress, attr.executionAddress, attr.fileSize)
 		} else {
-			fmt.Printf("%s\t ?????? ?????? %06X\n", args, attr.fileSize)
+			fmt.Printf("%s\t ?????? ?????? %06X\n", filename, attr.fileSize)
 		}
 
 	// case "KEY":
 	case "LOAD":
 		// *LOAD <filename> [<address>]
-		params := strings.Split(args, " ")
-		if len(params) > 2 {
-			env.raiseError(254, "Bad command")
-			break
-		}
-		if len(params) == 0 {
+		filename := ""
+		pos, filename, valid = parseFilename(line, pos)
+		if !valid {
 			env.raiseError(214, "File not found")
 			break
 		}
-		filename := cleanFilename(params[0])
-		loadAddress := loadAddressNull
-		if len(params) >= 2 {
-			i, err := strconv.ParseUint(params[1], 16, 32)
-			if err != nil {
+
+		loadAddress := addressNull
+		if line[pos] != '\r' {
+			_, loadAddress, valid = parseDWord(line, pos)
+			if !valid {
 				env.raiseError(252, "Bad address")
 				break
 			}
-			loadAddress = uint32(i)
 		}
 		loadFile(env, filename, loadAddress)
 
 	// case "LINE":
 	case "MOTOR":
-		execOSCLIfx(env, 0x89, strings.Split(args, ","))
+		execOSCLIfx(env, 0x89, line, pos)
 	case "OPT":
-		execOSCLIfx(env, 0x8b, strings.Split(args, ","))
+		execOSCLIfx(env, 0x8b, line, pos)
 	case "QUIT":
 		env.stop = true
 	case "RUN":
 		// *RUN <filename>
-		params := strings.Split(args, " ")
-		if len(params) == 0 {
+		filename := ""
+		_, filename, valid = parseFilename(line, pos)
+		if !valid {
 			env.raiseError(214, "File not found")
 			break
 		}
-		filename := cleanFilename(params[0])
-		attr := loadFile(env, filename, loadAddressNull)
+
+		attr := loadFile(env, filename, addressNull)
 		if attr.fileType == osFileFound {
 			if attr.hasMetadata {
 				env.cpu.SetPC(uint16(attr.executionAddress))
@@ -241,7 +258,7 @@ func execOSCLI(env *environment) {
 		}
 
 	case "ROM":
-		execOSCLIfx(env, 0x8d, strings.Split(args, ","))
+		execOSCLIfx(env, 0x8d, line, pos)
 
 	case "ROMS":
 		selectedROM := env.mem.Peek(sheilaRomLatch)
@@ -272,42 +289,61 @@ func execOSCLI(env *environment) {
 		env.mem.Poke(sheilaRomLatch, selectedROM)
 
 	case "SAVE":
-		// *SAVE <filename> <start addr> <end addr or length> <exec addr> <reload addr>
-		params := strings.Split(args, " ")
-		if len(params) < 3 || len(params) > 5 {
+		// *SAVE <filename> <start addr> <end addr or length> [<exec addr>] [<reload addr>]
+		// *SAVE A 1a34+2a
+		filename := ""
+		pos, filename, valid = parseFilename(line, pos)
+		if !valid {
+			env.raiseError(214, "File not found")
+			break
+		}
+
+		var startAddress uint32
+		pos, startAddress, valid = parseDWord(line, pos)
+		if !valid {
+			env.raiseError(252, "Bad address")
+			break
+		}
+
+		isSize := false
+		if line[pos] == '+' {
+			isSize = true
+			pos++
+		}
+		var endAddress uint32
+		pos, endAddress, valid = parseDWord(line, pos)
+		if !valid {
+			env.raiseError(252, "Bad address")
+			break
+		}
+		if isSize {
+			endAddress = startAddress + endAddress
+		}
+
+		executionAddress := startAddress
+		if line[pos] != '\r' {
+			pos, executionAddress, valid = parseDWord(line, pos)
+			if !valid {
+				env.raiseError(252, "Bad address")
+				break
+			}
+		}
+
+		loadAddress := startAddress
+		if line[pos] != '\r' {
+			pos, loadAddress, valid = parseDWord(line, pos)
+			if !valid {
+				env.raiseError(252, "Bad address")
+				break
+			}
+		}
+
+		if line[pos] != '\r' {
 			env.raiseError(254, "Bad command")
 			break
 		}
 
-		filename := cleanFilename(params[0])
-
-		i, err := strconv.ParseUint(params[1], 16, 32)
-		if err != nil {
-			env.raiseError(252, "Bad address")
-			break
-		}
-		startAddress := uint32(i)
-
-		isSize := false
-		if params[2][0] == '+' {
-			isSize = true
-			params[2] = params[2][1:]
-		}
-		i, err = strconv.ParseUint(params[2], 16, 32)
-		if err != nil {
-			env.raiseError(252, "Bad address")
-			break
-		}
-		endAddress := uint32(i)
-		if isSize {
-			endAddress = startAddress - endAddress
-		}
-
-		if len(params) > 3 {
-			env.notImplemented("*SAVE with execution or reload address")
-		}
-
-		saveFile(env, filename, startAddress, startAddress, startAddress, endAddress)
+		saveFile(env, filename, startAddress, endAddress, executionAddress, loadAddress, false)
 
 	case "SPOOL":
 		// *SPOOL filename
@@ -318,18 +354,22 @@ func execOSCLI(env *environment) {
 			env.mem.Poke(spoolFileHandle, 0)
 		}
 
-		params := strings.Split(args, " ")
-		if params[0] != "" {
+		filename := ""
+		_, filename, valid = parseFilename(line, pos)
+		if !valid {
+			env.raiseError(214, "File not found")
+			break
+		}
+		if filename != "" {
 			// Activate spool
-			filename := cleanFilename(params[0])
 			spoolFile := env.openFile(filename, 0x80 /*open for output*/)
 			env.mem.Poke(spoolFileHandle, spoolFile)
 		}
 
 	case "TAPE":
-		execOSCLIfx(env, 0x8c, strings.Split(args, ","))
+		execOSCLIfx(env, 0x8c, line, pos)
 	case "TV":
-		execOSCLIfx(env, 0x90, strings.Split(args, ","))
+		execOSCLIfx(env, 0x90, line, pos)
 
 	default:
 		unhandled = true
@@ -344,21 +384,34 @@ func execOSCLI(env *environment) {
 	}
 }
 
-func execOSCLIfx(env *environment, argA uint8, params []string) {
-	argX := 0
-	if len(params) >= 1 {
-		var err error
-		argX, err = strconv.Atoi(strings.TrimSpace(params[0]))
-		if err != nil || (argX&0xff) != argX {
+func execOSCLIfx(env *environment, argA uint8, line string, pos int) {
+	argX := uint8(0)
+	argY := uint8(0)
+	fail := false
+
+	if line[pos] != '\r' {
+		if line[pos] != ',' {
+			env.raiseError(254, "Bad Command")
+			return
+		}
+		pos++ // Skip ','
+		pos = parseSkipSpaces(line, pos)
+		pos, argX, fail = parseByte(line, pos)
+		if fail {
 			env.raiseError(254, "Bad Command")
 			return
 		}
 	}
-	argY := 0
-	if len(params) >= 2 {
-		var err error
-		argY, err = strconv.Atoi(strings.TrimSpace(params[1]))
-		if err != nil || (argY&0xff) != argY {
+
+	if line[pos] != '\r' {
+		if line[pos] != ',' {
+			env.raiseError(254, "Bad Command")
+			return
+		}
+		pos++ // Skip ','
+		pos = parseSkipSpaces(line, pos)
+		_, argY, fail = parseByte(line, pos)
+		if fail {
 			env.raiseError(254, "Bad Command")
 			return
 		}
@@ -370,9 +423,67 @@ func execOSCLIfx(env *environment, argA uint8, params []string) {
 	execOSBYTE(env)
 }
 
-func cleanFilename(filename string) string {
-	if filename[0] == '"' && len(filename) >= 2 {
-		return filename[1:(len(filename) - 1)]
+func parseFilename(line string, pos int) (int, string, bool) {
+	terminator := uint8(' ')
+	if line[pos] == '"' {
+		terminator = '"'
+		pos++
 	}
-	return filename
+	cursor := pos
+
+	for line[cursor] != terminator && line[cursor] != '\r' {
+		cursor++
+	}
+	if terminator != ' ' && line[cursor] != '\r' {
+		return cursor, "", false
+	}
+	filename := line[pos:cursor]
+	if terminator != ' ' {
+		cursor++
+	}
+	cursor = parseSkipSpaces(line, cursor)
+	return cursor, filename, true
+}
+
+func parseSkipSpaces(line string, pos int) int {
+	for line[pos] == ' ' { // Remove initial spaces
+		pos++
+	}
+	return pos
+}
+
+func parseByte(line string, pos int) (int, uint8, bool) {
+	cursor := pos
+	for line[cursor] >= '0' && line[cursor] <= '9' {
+		cursor++
+	}
+	if cursor == pos {
+		return pos, 0, false
+	}
+	value, err := strconv.Atoi(line[pos:cursor])
+	if err != nil || value > 255 {
+		return cursor, 0, false
+	}
+
+	cursor = parseSkipSpaces(line, pos)
+	return cursor, uint8(value), true
+}
+
+func parseDWord(line string, pos int) (int, uint32, bool) {
+	cursor := pos
+	for (line[cursor] >= '0' && line[cursor] <= '9') ||
+		(line[cursor] >= 'a' && line[cursor] <= 'f') ||
+		(line[cursor] >= 'A' && line[cursor] <= 'F') {
+		cursor++
+	}
+	if cursor == pos {
+		return pos, 0, false
+	}
+	value, err := strconv.ParseUint(line[pos:cursor], 16, 32)
+	if err != nil {
+		return cursor, 0, false
+	}
+
+	cursor = parseSkipSpaces(line, cursor)
+	return cursor, uint32(value), true
 }

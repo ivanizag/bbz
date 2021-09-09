@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -19,8 +18,7 @@ const (
 	cbStartAddressOrSize     uint16 = 0xa
 	cbEndAddressOrAttributes uint16 = 0xe
 
-	loadAddressNull      uint32 = ^uint32(0)
-	executionAddressNull uint32 = ^uint32(0)
+	addressNull uint32 = ^uint32(0)
 )
 
 type fileAttributes struct {
@@ -29,6 +27,7 @@ type fileAttributes struct {
 	hasMetadata      bool
 	loadAddress      uint32
 	executionAddress uint32
+	attributes       uint32
 }
 
 func execOSFILE(env *environment) {
@@ -53,9 +52,47 @@ func execOSFILE(env *environment) {
 			Save a block of memory as a file using the
 			information provided in the parameter block.
 		*/
-		attr := saveFile(env, filename, loadAddress, executionAddress, startAddress, endAddress)
+		attr := saveFile(env, filename, startAddress, endAddress, executionAddress, loadAddress, false)
 		if attr.fileType != osNotFound {
 			updateControlBlock(env, controlBlock, attr)
+		}
+		newA = attr.fileType
+
+	case 1:
+		option = "Write file metadata"
+		attr := getFileAttributes(env, filename)
+		if attr.fileType != osNotFound {
+			attr.loadAddress = loadAddress
+			attr.executionAddress = executionAddress
+			attr.attributes = endAddress
+			writeMetada(env, filename, attr)
+		}
+		newA = attr.fileType
+
+	case 2:
+		option = "Write file reload address"
+		attr := getFileAttributes(env, filename)
+		if attr.fileType != osNotFound {
+			attr.loadAddress = loadAddress
+			writeMetada(env, filename, attr)
+		}
+		newA = attr.fileType
+
+	case 3:
+		option = "Write file execution address"
+		attr := getFileAttributes(env, filename)
+		if attr.fileType != osNotFound {
+			attr.executionAddress = executionAddress
+			writeMetada(env, filename, attr)
+		}
+		newA = attr.fileType
+
+	case 4:
+		option = "Write file attributes"
+		attr := getFileAttributes(env, filename)
+		if attr.fileType != osNotFound {
+			attr.attributes = endAddress
+			writeMetada(env, filename, attr)
 		}
 		newA = attr.fileType
 
@@ -67,6 +104,44 @@ func execOSFILE(env *environment) {
 			is written to the parameter block.
 		*/
 		attr := getFileAttributes(env, filename)
+		if attr.fileType != osNotFound {
+			updateControlBlock(env, controlBlock, attr)
+		}
+		newA = attr.fileType
+
+	case 6:
+		option = "Delete file"
+		/*
+			Delete object. If the object does not exist, A returned
+			as &00. If the object is locked, or is not owned, or is
+			a directory that is not empty, or is open, then an error
+			is generated.
+		*/
+		err := os.Remove(filename)
+		var pathError *os.PathError
+		if errors.As(err, &pathError) {
+			newA = osNotFound
+		} else if err != nil {
+			env.raiseError(errorTodo, err.Error())
+		} else {
+			newA = osFileFound
+		}
+
+	case 7:
+		option = "Create an empty file of defined length"
+		/*
+			Create an empty file of defined length. Block as for
+			SAVE. The supplied start address is usually passed as &0
+			and the end address as the required length. No data is
+			transfered, and the file does not necessarily contain
+			zeros. Some file systems may deliberately overwrite any
+			existing data in the file. If a file already exists with
+			the same name, it is overwritten, with the file access
+			and the case of the name staying the same. If the file
+			is locked, or a directory exists with the same name, or
+			the file is open, then an error is generated.
+		*/
+		attr := saveFile(env, filename, startAddress, endAddress, executionAddress, loadAddress, true)
 		if attr.fileType != osNotFound {
 			updateControlBlock(env, controlBlock, attr)
 		}
@@ -84,22 +159,24 @@ func execOSFILE(env *environment) {
 		*/
 		useLoadAddress := (executionAddress & 0xff) == 0
 		if !useLoadAddress {
-			loadAddress = loadAddressNull
+			loadAddress = addressNull
 		}
 
 		attr := loadFile(env, filename, loadAddress)
 		//env.mem.pokeDoubleWord(controlBlock+cbStartAddressOrSize, attr.fileSize)
-		if attr.fileType != osNotFound {
-			updateControlBlock(env, controlBlock, attr)
+		if attr.fileType == osNotFound {
+			env.raiseError(214, "File not found")
 		}
+		updateControlBlock(env, controlBlock, attr)
 		newA = attr.fileType
 
 	default:
 		env.notImplemented(fmt.Sprintf("OSFILE(A=%02x)", a))
 	}
 
-	env.mem.pokeWord(controlBlock+cbEndAddressOrAttributes, 0x00 /*attributes*/)
-
+	if a != 1 && a != 5 {
+		env.mem.pokeWord(controlBlock+cbEndAddressOrAttributes, 0x00 /*attributes*/)
+	}
 	env.cpu.SetAXYP(newA, x, y, p)
 	env.log(fmt.Sprintf("OSFILE('%s',A=%02x,FCB=%04x,FILE=%s) => %v",
 		option, a, controlBlock, filename, newA))
@@ -112,6 +189,7 @@ func updateControlBlock(env *environment, controlBlock uint16, attr *fileAttribu
 		if attr.hasMetadata {
 			env.mem.pokeDoubleWord(controlBlock+cbLoadAddress, attr.loadAddress)
 			env.mem.pokeDoubleWord(controlBlock+cbExecutionAddress, attr.executionAddress)
+			env.mem.pokeDoubleWord(controlBlock+cbEndAddressOrAttributes, attr.attributes)
 		}
 	}
 }
@@ -126,7 +204,7 @@ func loadFile(env *environment, filename string, loadAddress uint32) *fileAttrib
 		return attr
 	}
 
-	if loadAddress == loadAddressNull {
+	if loadAddress == addressNull {
 		if !attr.hasMetadata {
 			env.raiseError(errorTodo, "Missing metadata file")
 			attr.fileType = osNotFound
@@ -149,15 +227,22 @@ func loadFile(env *environment, filename string, loadAddress uint32) *fileAttrib
 }
 
 func saveFile(env *environment, filename string,
-	loadAddress uint32, executionAddress uint32, startAddress uint32, endAddress uint32) *fileAttributes {
+	startAddress uint32, endAddress uint32, executionAddress uint32, loadAddress uint32, blank bool) *fileAttributes {
 
 	var attr fileAttributes
 	attr.loadAddress = loadAddress
 	attr.executionAddress = executionAddress
 	attr.fileSize = endAddress - startAddress
+	// attr.attributes = ?
 
-	data := env.mem.peekSlice(uint16(startAddress), uint16(attr.fileSize))
-	err := ioutil.WriteFile(filename, data, 0644)
+	var data []uint8
+	if blank {
+		data = make([]uint8, attr.fileSize)
+	} else {
+		data = env.mem.peekSlice(uint16(startAddress), uint16(attr.fileSize))
+	}
+
+	err := os.WriteFile(filename, data, 0644)
 	if err != nil {
 		env.raiseError(errorTodo, err.Error())
 		attr.fileType = osNotFound
@@ -165,11 +250,7 @@ func saveFile(env *environment, filename string,
 		attr.fileType = osFileFound
 	}
 
-	// Write metadata file
-	// $.BasObj     003000 003100 005000 00 CRC32=614721E1
-	metadata := fmt.Sprintf("$.FILE    %08X %08X %08X", attr.loadAddress, attr.executionAddress, attr.fileSize)
-	ioutil.WriteFile(filename+".inf", []byte(metadata), 0644)
-
+	writeMetada(env, filename, &attr)
 	return &attr
 }
 
@@ -202,7 +283,7 @@ func getFileAttributes(env *environment, filename string) *fileAttributes {
 		return &attr
 	}
 	parts := strings.Fields(string(data))
-	if len(parts) < 3 {
+	if len(parts) < 5 {
 		env.log(fmt.Sprintf("Invalid format for metadata file %s.inf, missing fields", filename))
 		return &attr
 	}
@@ -221,6 +302,20 @@ func getFileAttributes(env *environment, filename string) *fileAttributes {
 	}
 	attr.executionAddress = uint32(i)
 
+	i, err = strconv.ParseUint(parts[4], 16, 64)
+	if err != nil {
+		env.log(fmt.Sprintf("Invalid format for metadata file %s.inf, bad sttributes '%s'", filename, err.Error()))
+		return &attr
+	}
+	attr.attributes = uint32(i)
+
 	attr.hasMetadata = true
 	return &attr
+}
+
+func writeMetada(env *environment, filename string, attr *fileAttributes) {
+	// $.BasObj     003000 003100 005000 00 CRC32=614721E1
+	metadata := fmt.Sprintf("$.FILE    %08X %08X %08X %02X",
+		attr.loadAddress, attr.executionAddress, attr.fileSize, attr.attributes)
+	os.WriteFile(filename+".inf", []byte(metadata), 0644)
 }

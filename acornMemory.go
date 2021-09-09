@@ -3,7 +3,7 @@ package main
 import (
 	_ "embed"
 	"fmt"
-	"io/ioutil"
+	"os"
 )
 
 type acornMemory struct {
@@ -104,7 +104,7 @@ func (m *acornMemory) loadFirmware() {
 }
 
 func (m *acornMemory) loadRom(filename string, slot uint8) {
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
