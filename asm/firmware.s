@@ -97,6 +97,7 @@ CLAIMED:        pla                     ; Get back original ROM number
                 txa                     ; Pass X back to A to set zero flag
                 rts                     ; And return
 
+.INCLUDE        "gsinitgsread.s"
 
 
 ; area to store an error message

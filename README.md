@@ -25,8 +25,9 @@ for Acorn BBC Microcomputer language ROMs to run."
 References:
 - [BBC Microcomputer System User Guide](https://archive.org/details/BBCUG)
 - The Advanced User Guide for the BBC Microcomputer
+- [BeebWiki - 8-bit Acorn Computer Wiki](http://beebwiki.mdfs.net)
 - [Applecorn source code](https://github.com/bobbimanners/Applecorn)
-- [The MOS Reassembly for the BBC Micro](https://tobylobster.github.io/mos/mos/index.html)
+- [The MOS Reassembly for the BBC Micro](https://tobylobster.github.io/mos/mos/index.html) and [raybellis's mos120](https://github.com/raybellis/mos120)
 - [beeb-fstest test suite](https://github.com/tom-seddon/beeb-fstest)
 
 ## Features

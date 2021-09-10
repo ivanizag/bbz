@@ -73,7 +73,6 @@ Current file: asm/firmware.s
 00F010  1  61 6E 64 00  
 00F014  1  60           CTR_CLAIMED:    rts
 00F015  1               
-00F015  1               
 00F015  1               ;*************************************************************************
 00F015  1               ;*
 00F015  1               ;*  OSBYTE 143: Pass service commands to sideways ROMs
@@ -108,12 +107,162 @@ Current file: asm/firmware.s
 00F039  1  8A                           txa                     ; Pass X back to A to set zero flag
 00F03A  1  60                           rts                     ; And return
 00F03B  1               
-00F03B  1               
-00F03B  1               
-00F03B  1               ; area to store an error message
-00F03B  1  xx xx xx xx                  .res $fa00 - *
-00F03F  1  xx xx xx xx  
-00F043  1  xx xx xx xx  
+00F03B  1               .INCLUDE        "gsinitgsread.s"
+00F03B  2               ;*************************************************************************
+00F03B  2               ;*	 GSINIT	 string initialisation					 *
+00F03B  2               ;*	 F2/3 points to string offset by Y				 *
+00F03B  2               ;*									 *
+00F03B  2               ;*	 ON EXIT							 *
+00F03B  2               ;*	 Z flag set indicates null string,				 *
+00F03B  2               ;*	 Y points to first non blank character				 *
+00F03B  2               ;*	 A contains first non blank character				 *
+00F03B  2               ;*************************************************************************
+00F03B  2               
+00F03B  2               
+00F03B  2               .exportzp OSBYTE_PAR_3		:= $e4
+00F03B  2               .exportzp OSBYTE_PAR_2		:= $e5
+00F03B  2               .exportzp TEXT_PTR		:= $f2
+00F03B  2               
+00F03B  2  66 E4        _GSINIT:		ror	OSBYTE_PAR_3			; Rotate moves carry to &E4
+00F03D  2  20 4D F0     			jsr	_SKIP_SPACE			; get character from text
+00F040  2  C8           			iny					; increment Y to point at next character
+00F041  2  C9 22        			cmp	#$22				; check to see if its '"'
+00F043  2  F0 02        			beq	_BEA2A				; if so EA2A (carry set)
+00F045  2  88           			dey					; decrement Y
+00F046  2  18           			clc					; clear carry
+00F047  2  66 E4        _BEA2A:			ror	OSBYTE_PAR_3			; move bit 7 to bit 6 and put carry in bit 7
+00F049  2  C9 0D        			cmp	#$0d				; check to see if its CR to set Z
+00F04B  2  60           			rts					; and return
+00F04C  2               
+00F04C  2               ; Skip spaces
+00F04C  2  C8           _SKIP_SPACES_NXT:	iny
+00F04D  2  B1 F2        _SKIP_SPACE:		lda	(TEXT_PTR),Y
+00F04F  2  C9 20        			cmp	#$20
+00F051  2  F0 F9        			beq	_SKIP_SPACES_NXT
+00F053  2  C9 0D        __compare_newline:	cmp	#$0d
+00F055  2  60           			rts
+00F056  2               
+00F056  2               ;*************************************************************************
+00F056  2               ;*	 GSREAD	 string read routine					 *
+00F056  2               ;*	 F2/3 points to string offset by Y				 *
+00F056  2               ;*									 *
+00F056  2               ;*************************************************************************
+00F056  2  FF           _BD9B7:			.byte	$ff				; USER 6522 Bit IRQ mask		 &277
+00F057  2               				;
+00F057  2  A9 00        _GSREAD:		lda	#$00				; A=0
+00F059  2  85 E5        _BEA31:			sta	OSBYTE_PAR_2			; store A
+00F05B  2  B1 F2        			lda	(TEXT_PTR),Y			; read first character
+00F05D  2  C9 0D        			cmp	#$0d				; is it CR
+00F05F  2  D0 06        			bne	_BEA3F				; if not goto EA3F
+00F061  2  24 E4        			bit	OSBYTE_PAR_3			; if bit 7=1 no 2nd '"' found
+00F063  2  30 52        			bmi	_LEA8F				; goto EA8F
+00F065  2  10 1B        			bpl	_BEA5A				; if not EA5A
+00F067  2               
+00F067  2  C9 20        _BEA3F:			cmp	#$20				; is less than a space?
+00F069  2  90 4C        			bcc	_LEA8F				; goto EA8F
+00F06B  2  D0 06        			bne	_BEA4B				; if its not a space EA4B
+00F06D  2  24 E4        			bit	OSBYTE_PAR_3			; is bit 7 of &E4 =1
+00F06F  2  30 40        			bmi	_BEA89				; if so goto EA89
+00F071  2  50 0F        			bvc	_BEA5A				; if bit 6 = 0 EA5A
+00F073  2  C9 22        _BEA4B:			cmp	#$22				; is it '"'
+00F075  2  D0 10        			bne	_BEA5F				; if not EA5F
+00F077  2  24 E4        			bit	OSBYTE_PAR_3			; if so and Bit 7 of &E4 =0 (no previous ")
+00F079  2  10 36        			bpl	_BEA89				; then EA89
+00F07B  2  C8           			iny					; else point at next character
+00F07C  2  B1 F2        			lda	(TEXT_PTR),Y			; get it
+00F07E  2  C9 22        			cmp	#$22				; is it '"'
+00F080  2  F0 2F        			beq	_BEA89				; if so then EA89
+00F082  2               
+00F082  2  20 4D F0     _BEA5A:			jsr	_SKIP_SPACE			; read a byte from text
+00F085  2  38           			sec					; and return with
+00F086  2  60           			rts					; carry set
+00F087  2               								;
+00F087  2  C9 7C        _BEA5F:			cmp	#$7c				; is it '|'
+00F089  2  D0 26        			bne	_BEA89				; if not EA89
+00F08B  2  C8           			iny					; if so increase Y to point to next character
+00F08C  2  B1 F2        			lda	(TEXT_PTR),Y			; get it
+00F08E  2  C9 7C        			cmp	#$7c				; and compare it with '|' again
+00F090  2  F0 1F        			beq	_BEA89				; if its '|' then EA89
+00F092  2  C9 22        			cmp	#$22				; else is it '"'
+00F094  2  F0 1B        			beq	_BEA89				; if so then EA89
+00F096  2  C9 21        			cmp	#$21				; is it !
+00F098  2  D0 05        			bne	_BEA77				; if not then EA77
+00F09A  2  C8           			iny					; increment Y again
+00F09B  2  A9 80        			lda	#$80				; set bit 7
+00F09D  2  D0 BA        			bne	_BEA31				; loop back to EA31 to set bit 7 in next CHR
+00F09F  2  C9 20        _BEA77:			cmp	#$20				; is it a space
+00F0A1  2  90 14        			bcc	_LEA8F				; if less than EA8F Bad String Error
+00F0A3  2  C9 3F        			cmp	#$3f				; is it '?'
+00F0A5  2  F0 08        			beq	_BEA87				; if so EA87
+00F0A7  2  20 E7 F0     			jsr	_LEABF				; else modify code as if CTRL had been pressed
+00F0AA  2  2C 56 F0     			bit	_BD9B7				; if bit 6 set
+00F0AD  2  70 03        			bvs	_BEA8A				; then EA8A
+00F0AF  2  A9 7F        _BEA87:			lda	#$7f				; else set bits 0 to 6 in A
+00F0B1  2               
+00F0B1  2  B8           _BEA89:			clv					; clear V
+00F0B2  2  C8           _BEA8A:			iny					; increment Y
+00F0B3  2  05 E5        			ora	OSBYTE_PAR_2			;
+00F0B5  2  18           			clc					; clear carry
+00F0B6  2  60           			rts					; Return
+00F0B7  2               								;
+00F0B7  2  00           _LEA8F:			brk					;
+00F0B8  2  FD           			.byte	$fd				; error number
+00F0B9  2  42 61 64 20  			.byte	"Bad string"			; message
+00F0BD  2  73 74 72 69  
+00F0C1  2  6E 67        
+00F0C3  2  00           			brk					;
+00F0C4  2               
+00F0C4  2               
+00F0C4  2               ;************ Modify code as if SHIFT pressed *****************************
+00F0C4  2               
+00F0C4  2  C9 30        _LEA9C:			cmp	#$30				; if A='0' skip routine
+00F0C6  2  F0 1E        			beq	_BEABE				;
+00F0C8  2  C9 40        			cmp	#$40				; if A='@' skip routine
+00F0CA  2  F0 1A        			beq	_BEABE				;
+00F0CC  2  90 12        			bcc	_BEAB8				; if A<'@' then EAB8
+00F0CE  2  C9 7F        			cmp	#$7f				; else is it DELETE
+00F0D0  2               
+00F0D0  2  F0 14        			beq	_BEABE				; if so skip routine
+00F0D2  2  B0 10        			bcs	_BEABC				; if greater than &7F then toggle bit 4
+00F0D4  2  49 30        _BEAAC:			eor	#$30				; reverse bits 4 and 5
+00F0D6  2  C9 6F        			cmp	#$6f				; is it &6F (previously ' _' (&5F))
+00F0D8  2  F0 04        			beq	_BEAB6				; goto EAB6
+00F0DA  2  C9 50        			cmp	#$50				; is it &50 (previously '`' (&60))
+00F0DC  2  D0 02        			bne	_BEAB8				; if not EAB8
+00F0DE  2  49 1F        _BEAB6:			eor	#$1f				; else continue to convert ` _
+00F0E0  2  C9 21        _BEAB8:			cmp	#$21				; compare &21 '!'
+00F0E2  2  90 02        			bcc	_BEABE				; if less than return
+00F0E4  2  49 10        _BEABC:			eor	#$10				; else finish conversion by toggling bit 4
+00F0E6  2  60           _BEABE:			rts					; exit
+00F0E7  2               								;
+00F0E7  2               								; ASCII codes &00 &20 no change
+00F0E7  2               								; 21-3F have bit 4 reverses (31-3F)
+00F0E7  2               								; 41-5E A-Z have bit 5 reversed a-z
+00F0E7  2               								; 5F & 60 are reversed
+00F0E7  2               								; 61-7E bit 5 reversed a-z becomes A-Z
+00F0E7  2               								; DELETE unchanged
+00F0E7  2               								; &80+ has bit 4 changed
+00F0E7  2               
+00F0E7  2               ;************** Implement CTRL codes *************************************
+00F0E7  2               
+00F0E7  2  C9 7F        _LEABF:			cmp	#$7f				; is it DEL
+00F0E9  2  F0 0E        			beq	_BEAD1				; if so ignore routine
+00F0EB  2  B0 E7        			bcs	_BEAAC				; if greater than &7F go to EAAC
+00F0ED  2  C9 60        			cmp	#$60				; if A<>'`'
+00F0EF  2  D0 02        			bne	_BEACB				; goto EACB
+00F0F1  2  A9 5F        			lda	#$5f				; if A=&60, A=&5F
+00F0F3  2               
+00F0F3  2  C9 40        _BEACB:			cmp	#$40				; if A<&40
+00F0F5  2  90 02        			bcc	_BEAD1				; goto EAD1  and return unchanged
+00F0F7  2  29 1F        			and	#$1f				; else zero bits 5 to 7
+00F0F9  2  60           _BEAD1:			rts					; return
+00F0FA  2               
+00F0FA  1               
+00F0FA  1               
+00F0FA  1               ; area to store an error message
+00F0FA  1  xx xx xx xx                  .res $fa00 - *
+00F0FE  1  xx xx xx xx  
+00F102  1  xx xx xx xx  
 00FA00  1                               .org $fa00
 00FA00  1  00           errorArea:      brk
 00FA01  1  00           errorCode:      .byte 0
@@ -147,17 +296,17 @@ Current file: asm/firmware.s
 00FB12  1  60           epSYSBRK:       rts                     ; 0xfb12
 00FB13  1  60           epRDRM:         rts                     ; 0xfb13
 00FB14  1  60           epVDUCH:        rts                     ; 0xfb14
-00FB15  1  60           epGSINIT:       rts                     ; 0xfb16
-00FB16  1  60           epGSREAD:       rts                     ; 0xfb17
-00FB17  1  60           epNET:          rts                     ; 0xfb18
-00FB18  1  60           epVDU:          rts                     ; 0xfb19
-00FB19  1  60           epKEY:          rts                     ; 0xfb1a
-00FB1A  1  60           epINS:          rts                     ; 0xfb1b
-00FB1B  1  60           epREM:          rts                     ; 0xfb1c
-00FB1C  1  60           epCNP:          rts                     ; 0xfb1d
-00FB1D  1  60           epIND1:         rts                     ; 0xfb1e
-00FB1E  1  60           epIND2:         rts                     ; 0xfb1f
-00FB1F  1  60           epIND3:         rts                     ; 0xfb20
+00FB15  1  60           epGSINIT:       rts                     ; 0xfb15
+00FB16  1  60           epGSREAD:       rts                     ; 0xfb16
+00FB17  1  60           epNET:          rts                     ; 0xfb17
+00FB18  1  60           epVDU:          rts                     ; 0xfb18
+00FB19  1  60           epKEY:          rts                     ; 0xfb19
+00FB1A  1  60           epINS:          rts                     ; 0xfb1a
+00FB1B  1  60           epREM:          rts                     ; 0xfb1b
+00FB1C  1  60           epCNP:          rts                     ; 0xfb1c
+00FB1D  1  60           epIND1:         rts                     ; 0xfb1d
+00FB1E  1  60           epIND2:         rts                     ; 0xfb1e
+00FB1F  1  60           epIND3:         rts                     ; 0xfb1f
 00FB20  1               
 00FB20  1               
 00FB20  1               ; MOS function calls

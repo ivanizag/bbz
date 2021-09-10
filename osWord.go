@@ -32,6 +32,7 @@ func execOSWORD(env *environment) {
 		maxLength := env.mem.Peek(xy + 2)
 		minChar := env.mem.Peek(xy + 3)
 		maxChar := env.mem.Peek(xy + 4)
+
 		env.mem.pokeString(buffer, line, '\r', maxLength-1)
 		pOut := p &^ 1 // Clear carry
 		env.cpu.SetAXYP(1, x, uint8(len(line)), pOut)

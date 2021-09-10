@@ -48,6 +48,7 @@ func execOSBYTE(env *environment) {
 			On entry, the value in X determines the output device to be selected
 		*/
 		env.mem.Poke(charDestinations, x)
+		isIO = true
 
 	case 0x04:
 		option = "Enable/disable cursor editing"
@@ -323,6 +324,15 @@ func execOSBYTE(env *environment) {
 		} else {
 			env.notImplemented("OSBYTEda for x or y not zero")
 		}
+
+	case 0xec:
+		option = "Read/Write character output device status"
+		/*
+			This is the location altered by *FX3
+		*/
+		newX = 0
+		newY = 0
+		isIO = true
 
 	case 0xfd:
 		option = "Read hard/soft break"

@@ -155,6 +155,22 @@ func RunMOS(env *environment) {
 				env.mem.Poke(sheilaRomLatch, currentRom)
 				env.logIO(fmt.Sprintf("OSRDRM(%v:%04x)=%02x", y, address, value))
 
+			case epGSINIT: // OSGSINIT
+				// Assembler implementation copied from MOS 1.20
+				env.cpu.SetPC(procGSINIT)
+
+				address := env.mem.peekWord(zpStr) + uint16(y)
+				line := env.mem.peekString(address, '\r')
+				env.log(fmt.Sprintf("GSINIT('%v')", line))
+
+			case epGSREAD: // OSGSREAD
+				// Assembler implementation copied from MOS 1.20
+				env.cpu.SetPC(procGSREAD)
+
+				address := env.mem.peekWord(zpStr) + uint16(y)
+				line := env.mem.peekString(address, '\r')
+				env.log(fmt.Sprintf("GSREAD('%v')", line))
+
 			case epSYSBRK: // 6502 BRK handler
 				/*
 					When the 6512 encounters a BRK instruction the operating system places
