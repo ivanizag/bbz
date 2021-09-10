@@ -261,7 +261,7 @@ func execOSCLI(env *environment) {
 		execOSCLIfx(env, 0x8d, line, pos)
 
 	case "ROMS":
-		selectedROM := env.mem.Peek(sheilaRomLatch)
+		currentRom := env.mem.Peek(sheilaRomLatch)
 		for i := 0xf; i >= 0; i-- {
 			if env.mem.writeProtectRom[i] {
 				env.mem.Poke(sheilaRomLatch, uint8(i))
@@ -286,7 +286,7 @@ func execOSCLI(env *environment) {
 				env.con.write(fmt.Sprintf("RAM %X 16K\n", i))
 			}
 		}
-		env.mem.Poke(sheilaRomLatch, selectedROM)
+		env.mem.Poke(sheilaRomLatch, currentRom)
 
 	case "SAVE":
 		// *SAVE <filename> <start addr> <end addr or length> [<exec addr>] [<reload addr>]
@@ -387,31 +387,27 @@ func execOSCLI(env *environment) {
 func execOSCLIfx(env *environment, argA uint8, line string, pos int) {
 	argX := uint8(0)
 	argY := uint8(0)
-	fail := false
+	var valid bool
 
 	if line[pos] != '\r' {
-		if line[pos] != ',' {
-			env.raiseError(254, "Bad Command")
-			return
+		if line[pos] == ',' {
+			pos++ // Skip ','
 		}
-		pos++ // Skip ','
 		pos = parseSkipSpaces(line, pos)
-		pos, argX, fail = parseByte(line, pos)
-		if fail {
+		pos, argX, valid = parseByte(line, pos)
+		if !valid {
 			env.raiseError(254, "Bad Command")
 			return
 		}
 	}
 
 	if line[pos] != '\r' {
-		if line[pos] != ',' {
-			env.raiseError(254, "Bad Command")
-			return
+		if line[pos] == ',' {
+			pos++ // Skip ','
 		}
-		pos++ // Skip ','
 		pos = parseSkipSpaces(line, pos)
-		_, argY, fail = parseByte(line, pos)
-		if fail {
+		_, argY, valid = parseByte(line, pos)
+		if !valid {
 			env.raiseError(254, "Bad Command")
 			return
 		}
@@ -465,7 +461,7 @@ func parseByte(line string, pos int) (int, uint8, bool) {
 		return cursor, 0, false
 	}
 
-	cursor = parseSkipSpaces(line, pos)
+	cursor = parseSkipSpaces(line, cursor)
 	return cursor, uint8(value), true
 }
 

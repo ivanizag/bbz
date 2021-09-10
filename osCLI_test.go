@@ -6,20 +6,36 @@ import (
 )
 
 func Test_OSCLI_HELP(t *testing.T) {
-
-	def := "BASIC.ROM"
-	roms := []*string{&def}
-
-	env := newEnvironment(roms, false, false, false, false, false)
-	con := newConsoleMock(env, []string{
+	out := integrationTestBasic([]string{
 		"*HELP",
 	})
-	env.con = con
 
-	RunMOS(env)
-
-	if !strings.Contains(con.output, "BBZ") {
-		t.Log(con.output)
+	if !strings.Contains(out, "BBZ") {
+		t.Log(out)
 		t.Error("*HELP is not returning BBZ")
+	}
+}
+
+func Test_OSCLI_FX_commas(t *testing.T) {
+	out := integrationTestBasic([]string{
+		"*FX 200,3",
+		"IF ERR=40 PRINT \"PA\" + \"SS\"",
+	})
+
+	if !strings.Contains(out, "PASS") {
+		t.Log(out)
+		t.Error("*FX error")
+	}
+}
+
+func Test_OSCLI_FX_spaces(t *testing.T) {
+	out := integrationTestBasic([]string{
+		"*FX200 3 1",
+		"IF ERR=40 PRINT \"PA\" + \"SS\"",
+	})
+
+	if !strings.Contains(out, "PASS") {
+		t.Log(out)
+		t.Error("*FX error")
 	}
 }

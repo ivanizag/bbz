@@ -250,6 +250,12 @@ func execOSBYTE(env *environment) {
 		newX = uint8(romStartAddress & 0xff)
 		newY = uint8(romStartAddress >> 8)
 
+	case 0x86:
+		option = "Read text cursor position"
+		// Not implemented. Returns 1, 1
+		newX = 1
+		newY = 1
+
 	case 0x87:
 		option = "Read character at text cursor position"
 		/*
@@ -283,6 +289,10 @@ func execOSBYTE(env *environment) {
 		*/
 		env.initLanguage(x)
 		newA = 1
+
+	case 0x97:
+		option = "Write SHEILA"
+		env.mem.Poke(sheilaStart+uint16(x), y)
 
 	case 0xa0:
 		option = "Read VDU variable value"

@@ -41,8 +41,8 @@ func newEnvironment(roms []*string, cpuLog bool, apiLog bool, apiLogIO bool, mem
 	env.lastTimerUpdate = time.Now()
 	env.lastEscapeTimestamp = time.Now()
 	env.mem = newAcornMemory(memLog)
-	env.cpu = core6502.NewNMOS6502(env.mem)
-	//env.cpu = core6502.NewCMOS65c02(env.mem)
+	//env.cpu = core6502.NewNMOS6502(env.mem)
+	env.cpu = core6502.NewCMOS65c02(env.mem)
 	env.cpu.SetTrace(cpuLog)
 	env.vdu = newVdu(&env)
 	env.apiLog = apiLog

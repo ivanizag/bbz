@@ -21,8 +21,7 @@ func (c *consoleMock) readline() (string, bool) {
 		return "", true
 	}
 	line := c.linesIn[c.lineIn]
-	c.env.writeSpool(line)
-	c.env.writeSpool("\n")
+	c.write(line + "\n")
 	c.lineIn++
 	return line, false
 }

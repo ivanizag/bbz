@@ -145,6 +145,16 @@ func RunMOS(env *environment) {
 				// The selected ROM has not defined a custom BRKV
 				panic("Unhandled BRK")
 
+			case epRDRM: // OSRDRM
+				currentRom := env.mem.Peek(sheilaRomLatch)
+				address := env.mem.peekWord(zpAddress)
+				env.mem.Poke(sheilaRomLatch, y)
+				value := env.mem.Peek(address)
+
+				env.cpu.SetAXYP(value, currentRom, 0, p)
+				env.mem.Poke(sheilaRomLatch, currentRom)
+				env.logIO(fmt.Sprintf("OSRDRM(%v:%04x)=%02x", y, address, value))
+
 			case epSYSBRK: // 6502 BRK handler
 				/*
 					When the 6512 encounters a BRK instruction the operating system places
@@ -180,6 +190,11 @@ func RunMOS(env *environment) {
 				// TODO: multiple ROMS: service call 6 before the jump to vectorBRK
 
 				env.log(fmt.Sprintf("BREAK(ERR=%02x, '%s')", faultNumber, faultString))
+
+				if env.panicOnErr && faultNumber == 0 && faultString == "" {
+					// The code is probably running on zeroed memory
+					panic("Running on zeroed memory")
+				}
 
 			default:
 				env.notImplemented(fmt.Sprintf("MOS(EP=0x%04x,A=0x%02x,X=0x%02x,y=0x%02x)", pc, a, x, y))

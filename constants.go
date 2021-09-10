@@ -22,6 +22,7 @@ const (
 	zpY            uint16 = 0x00f1
 	zpStr          uint16 = 0x00f2 // OSCLI command line
 	zpROMSelect    uint16 = 0x00f4
+	zpAddress      uint16 = 0x00f6
 	zpAccumulator  uint16 = 0x00fc
 	zpErrorPointer uint16 = 0x00fd
 	zpEscapeFlag   uint16 = 0x00ff
@@ -51,8 +52,8 @@ const (
 	//serviceNoOperation uint8 = 0
 	serviceOSCLI  uint8 = 4
 	serviceOSBYTE uint8 = 7
-	//serviceOSWORD      uint8 = 8
-	serviceHELP uint8 = 9
+	serviceOSWORD uint8 = 8
+	serviceHELP   uint8 = 9
 
 	// Scratch area for errors in page 0xfa
 	errorArea             uint16 = 0xfa00
@@ -96,6 +97,7 @@ const (
 	epEntryPointsLast uint16 = 0xfb1f
 
 	// Fred, Jim and Sheila
+	sheilaStart    uint16 = 0xf000
 	sheilaRomLatch uint16 = 0xfe30
 
 	maxFiles uint8 = 100

@@ -144,6 +144,15 @@ func execOSWORD(env *environment) {
 		env.log(fmt.Sprintf("OSWORD08('Define envelope',NUMBER=%v)", number))
 
 	default:
-		env.notImplemented(fmt.Sprintf("OSWORD%02x", a))
+
+		// Send to the other ROMS if available.
+		env.mem.Poke(zpA, a)
+		env.mem.Poke(zpX, x)
+		env.mem.Poke(zpY, y)
+		env.cpu.SetAXYP(serviceOSWORD, x, y, p)
+
+		env.cpu.SetPC(procServiceRoms)
+		env.log(fmt.Sprintf("OSWORD%02x_to_roms(X=0x%02x,Y=0x%02x)", a, x, y))
+		// procServiceRoms issues a 254-Bad command if the command is not handled by any ROM
 	}
 }

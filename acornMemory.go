@@ -58,6 +58,12 @@ func (m *acornMemory) Peek(address uint16) uint8 {
 		}
 	}
 
+	return m.peekInternal(address)
+}
+
+func (m *acornMemory) peekInternal(address uint16) uint8 {
+	value := m.data[address]
+
 	if romStartAddress <= address && address <= romEndAddress && len(m.sideRom[m.activeRom]) > 0 {
 		slot := m.sideRom[m.activeRom]
 		if len(slot) > int(address-romStartAddress) {
