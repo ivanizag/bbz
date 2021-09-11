@@ -26,9 +26,17 @@ func RunMOS(env *environment) {
 		if pc == romStartAddress {
 			a, _, _, _ := env.cpu.GetAXYP()
 			env.log(fmt.Sprintf("LANGUAGE(A=%02x, ROM=%x)", a, env.mem.activeRom))
+
 		} else if pc == romServiceEntry {
 			a, _, _, _ := env.cpu.GetAXYP()
 			env.log(fmt.Sprintf("SERVICE(CMD=%02x, ROM=%x)", a, env.mem.activeRom))
+
+		} else if pc >= extentedVectorTableStart &&
+			pc < extentedVectorTableEnd {
+
+			// See http://beebwiki.mdfs.net/index.php/Paged_ROM
+			panic(fmt.Sprintf("Extender vectors not implemented, %04x was called", pc))
+
 		} else if pc >= entryPoints && pc <= epEntryPointsLast {
 			a, x, y, p := env.cpu.GetAXYP()
 

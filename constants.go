@@ -27,12 +27,13 @@ const (
 	zpErrorPointer uint16 = 0x00fd
 	zpEscapeFlag   uint16 = 0x00ff
 
-	vectorBRK         uint16 = 0x0202
-	mosVariablesStart uint16 = 0x0236
-	romTypeTable      uint16 = 0x023a
-	spoolFileHandle   uint16 = 0x0257
-	charDestinations  uint16 = 0x027c
-	mosVariablesEnd   uint16 = 0x028f
+	vectorBRK           uint16 = 0x0202
+	mosVariablesStart   uint16 = 0x0236
+	mosRomTypeTable     uint16 = 0x023a
+	mosSpoolFileHandle  uint16 = 0x0257
+	mosCharDestinations uint16 = 0x027c
+	mosCurrentLanguage  uint16 = 0x028c
+	mosVariablesEnd     uint16 = 0x028f
 
 	// ROM header https://tobylobster.github.io/mos/mos/S-s2.html#SP26
 	userMemBottom             uint16 = 0x0e00
@@ -101,6 +102,9 @@ const (
 	// Fred, Jim and Sheila
 	sheilaStart    uint16 = 0xf000
 	sheilaRomLatch uint16 = 0xfe30
+
+	extentedVectorTableStart uint16 = 0xff00
+	extentedVectorTableEnd   uint16 = 0xff51
 
 	maxFiles uint8 = 100
 

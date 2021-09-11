@@ -1,7 +1,7 @@
 ROM2 has the command line interpreter
 ROM1 has the compiler? May be invoked via OSBYTEa3(x=c0)
 
-
+$ cd ROMs/Pascal/
 $ go run ../../*.go -rom0 ../Pascal-1.10-2.rom -m
 bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz
 (tip: uppercase is usually needed)

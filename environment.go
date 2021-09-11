@@ -79,7 +79,7 @@ func (env *environment) escape() {
 
 func (env *environment) initUpperLanguage() {
 	for slot := 0xf; slot >= 0; slot-- {
-		romType := env.mem.data[romTypeTable+uint16(slot)]
+		romType := env.mem.data[mosRomTypeTable+uint16(slot)]
 		if romType&0x40 != 0 {
 			env.initLanguage(uint8(slot))
 			return
@@ -90,6 +90,8 @@ func (env *environment) initUpperLanguage() {
 }
 
 func (env *environment) initLanguage(slot uint8) {
+	//See https://github.com/raybellis/mos120/blob/master/mos120.s#L6186
+	env.mem.Poke(mosCurrentLanguage, slot)
 	env.mem.Poke(zpROMSelect, slot)
 	env.mem.Poke(sheilaRomLatch, slot)
 
@@ -103,7 +105,7 @@ func (env *environment) initLanguage(slot uint8) {
 		The MOS also automatically prints the ROM's title string (&8009) so that the user is acknowledged.
 	*/
 	language := env.mem.peekString(romTitleString, 0)
-	env.con.write(fmt.Sprintf("%s\n", language))
+	env.con.write(fmt.Sprintf("%s\n\n", language))
 
 	_, x, y, p := env.cpu.GetAXYP()
 	env.cpu.SetAXYP(1, x, y, p)

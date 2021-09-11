@@ -119,7 +119,7 @@ func (m *acornMemory) loadRom(filename string, slot uint8) {
 	m.writeProtectRom[slot] = true
 
 	// Cache the ROM type
-	m.data[romTypeTable+uint16(slot)] = data[romTypeByte-romStartAddress]
+	m.data[mosRomTypeTable+uint16(slot)] = data[romTypeByte-romStartAddress]
 }
 
 func (m *acornMemory) completeWithRam() {

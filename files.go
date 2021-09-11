@@ -64,13 +64,13 @@ func (env *environment) closeFile(handle uint8) {
 }
 
 func (env *environment) writeSpool(s string) {
-	charDest := env.mem.peekInternal(charDestinations)
+	charDest := env.mem.peekInternal(mosCharDestinations)
 	if charDest&0x10 != 0 {
 		// Spooled output is disabled
 		return
 	}
 
-	spoolHandle := env.mem.peekInternal(spoolFileHandle)
+	spoolHandle := env.mem.peekInternal(mosSpoolFileHandle)
 	if spoolHandle == 0 {
 		// No spool file defined
 		return

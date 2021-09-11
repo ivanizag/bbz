@@ -47,7 +47,7 @@ func execOSBYTE(env *environment) {
 		/*
 			On entry, the value in X determines the output device to be selected
 		*/
-		env.mem.Poke(charDestinations, x)
+		env.mem.Poke(mosCharDestinations, x)
 		isIO = true
 
 	case 0x04:
@@ -312,6 +312,14 @@ func execOSBYTE(env *environment) {
 		}
 
 	// Starting from a = 0xa6, we are reading mos variables.
+	case 0xa8:
+		option = "Read adress of extended vector table"
+		/*
+			On exit X and Y point to the start of the extended vectors for ROMs
+		*/
+		newX = uint8(extentedVectorTableStart & 0xff)
+		newY = uint8(extentedVectorTableStart >> 8)
+
 	case 0xda:
 		option = "R/W number of items in VDU"
 		/*

@@ -107,7 +107,7 @@ func execOSCLI(env *environment) {
 		// Runs the first language ROM with no service entry
 		unhandled = true
 		for slot := 0xf; slot >= 0; slot-- {
-			romType := env.mem.data[romTypeTable+uint16(slot)]
+			romType := env.mem.data[mosRomTypeTable+uint16(slot)]
 			if romType&0b1100_0000 == 0b0100_0000 { // bit 7 clear, bit 6 set
 				env.initLanguage(uint8(slot))
 				unhandled = false
@@ -364,10 +364,10 @@ func execOSCLI(env *environment) {
 	case "SPOOL":
 		// *SPOOL filename
 		// *SPOOL
-		spoolFile := env.mem.Peek(spoolFileHandle)
+		spoolFile := env.mem.Peek(mosSpoolFileHandle)
 		if spoolFile != 0 {
 			env.closeFile(spoolFile)
-			env.mem.Poke(spoolFileHandle, 0)
+			env.mem.Poke(mosSpoolFileHandle, 0)
 		}
 
 		filename := ""
@@ -379,7 +379,7 @@ func execOSCLI(env *environment) {
 		if filename != "" {
 			// Activate spool
 			spoolFile := env.openFile(filename, 0x80 /*open for output*/)
-			env.mem.Poke(spoolFileHandle, spoolFile)
+			env.mem.Poke(mosSpoolFileHandle, spoolFile)
 		}
 
 	case "TAPE":

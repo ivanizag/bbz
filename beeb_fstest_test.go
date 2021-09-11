@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -17,4 +18,7 @@ func Test_beeb_ftest(t *testing.T) {
 		t.Log(out)
 		t.Error("beeb-fstest failed")
 	}
+
+	os.Remove("+.0")
+	os.Remove("+.0.inf")
 }
