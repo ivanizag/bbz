@@ -116,8 +116,24 @@ func execOSCLI(env *environment) {
 		}
 
 	case "CAT":
-		// TODO
-		env.con.write("\n<<placeholder>>\n")
+		// *CAT filename
+		filename := ""
+		_, filename, valid = parseFilename(line, pos)
+		if !valid {
+			env.raiseError(254, "Bad Command")
+			break
+		}
+
+		if filename != "" {
+			data, err := os.ReadFile(filename)
+			if err != nil {
+				env.raiseError(errorTodo, err.Error())
+				break
+			}
+			for _, ch := range data {
+				env.vdu.write(ch)
+			}
+		}
 
 	case "CODE":
 		execOSCLIfx(env, 0x88, line, pos)

@@ -42,6 +42,7 @@ References:
   - */
   - *FX
   - *BASIC
+  - *CAT filename: dumps the file contents using the BBC Micro character set and VDU conversions
   - *DIR
   - *HELP
   - *HOST cmd: execute a command on the host OS. Example: `*HOST ls -la`

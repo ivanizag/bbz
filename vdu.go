@@ -154,7 +154,7 @@ func (v *vdu) writeInternal(cmd uint8, q []uint8) {
 		   9 This code (VDU9 or CTRL I or TAB) moves the cursor forward one character
 		   position.
 		*/
-		out = "\x1b[D"
+		out = "\x1b[C"
 	case 10:
 		/*
 		   This statement (VDU10 or CTRL J) will move the cursor down one line. If the
