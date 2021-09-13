@@ -40,6 +40,7 @@ var cliCommands = []string{
 	"SPOOL",
 	"TAPE",
 	"TV",
+	"TYPE",
 }
 
 func execOSCLI(env *environment) {
@@ -116,24 +117,7 @@ func execOSCLI(env *environment) {
 		}
 
 	case "CAT":
-		// *CAT filename
-		filename := ""
-		_, filename, valid = parseFilename(line, pos)
-		if !valid {
-			env.raiseError(254, "Bad Command")
-			break
-		}
-
-		if filename != "" {
-			data, err := os.ReadFile(filename)
-			if err != nil {
-				env.raiseError(errorTodo, err.Error())
-				break
-			}
-			for _, ch := range data {
-				env.vdu.write(ch)
-			}
-		}
+		env.con.write("<cat placeholder>\n")
 
 	case "CODE":
 		execOSCLIfx(env, 0x88, line, pos)
@@ -386,6 +370,26 @@ func execOSCLI(env *environment) {
 		execOSCLIfx(env, 0x8c, line, pos)
 	case "TV":
 		execOSCLIfx(env, 0x90, line, pos)
+
+	case "TYPE":
+		// *TYPE filename
+		filename := ""
+		_, filename, valid = parseFilename(line, pos)
+		if !valid {
+			env.raiseError(254, "Bad Command")
+			break
+		}
+
+		if filename != "" {
+			data, err := os.ReadFile(filename)
+			if err != nil {
+				env.raiseError(errorTodo, err.Error())
+				break
+			}
+			for _, ch := range data {
+				env.vdu.write(ch)
+			}
+		}
 
 	default:
 		unhandled = true

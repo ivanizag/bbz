@@ -41,7 +41,7 @@ func Test_OSCLI_FX_spaces(t *testing.T) {
 	}
 }
 
-func Test_OSCLI_CAT(t *testing.T) {
+func Test_OSCLI_TYPE(t *testing.T) {
 	source := "Hi []{}"
 	printed := "Hi ←→¼¾>"
 
@@ -58,21 +58,11 @@ func Test_OSCLI_CAT(t *testing.T) {
 	}
 
 	out := integrationTestBasic([]string{
-		"*CAT " + file.Name(),
+		"*TYPE " + file.Name(),
 	})
 
 	if !strings.Contains(out, printed) {
 		t.Log(out)
-		t.Error("*CAT error")
+		t.Error("*TYPE error")
 	}
-
-	out2 := integrationTestBasic([]string{
-		"*CAT " + file.Name(),
-	})
-
-	if !strings.Contains(out2, printed) {
-		t.Log(out)
-		t.Error("*. error")
-	}
-
 }
