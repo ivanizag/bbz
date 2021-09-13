@@ -20,5 +20,5 @@ func Test_beeb_ftest(t *testing.T) {
 	}
 
 	os.Remove("+.0")
-	os.Remove("+.0.inf")
+	os.Remove("+.0" + metadataExtension)
 }

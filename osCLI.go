@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"strconv"
 	"strings"
 )
@@ -24,6 +25,7 @@ var cliCommands = []string{
 	"DELETE",
 	"DRIVE",
 	"EXEC",
+	"EX",
 	"HELP",
 	"HOST", // Added for bbz
 	"INFO",
@@ -117,7 +119,61 @@ func execOSCLI(env *environment) {
 		}
 
 	case "CAT":
-		env.con.write("<cat placeholder>\n")
+		pathName := ""
+		_, pathName, valid = parseFilename(line, pos)
+		if !valid {
+			env.raiseError(254, "Bad Command")
+			break
+		}
+		if pathName == "" || pathName == "$" {
+			pathName = "."
+		}
+
+		entries, err := os.ReadDir(pathName)
+		if err != nil {
+			env.raiseError(errorTodo, err.Error())
+			break
+		}
+
+		for _, entry := range entries {
+			if strings.HasPrefix(entry.Name(), ".") ||
+				strings.HasSuffix(entry.Name(), metadataExtension) {
+				// Ignore the file
+			} else if entry.Type().IsRegular() {
+				env.con.writef("%v\n", entry.Name())
+			} else {
+				// Ignore the file
+			}
+		}
+
+	case "EX":
+		pathName := ""
+		_, pathName, valid = parseFilename(line, pos)
+		if !valid {
+			env.raiseError(254, "Bad Command")
+			break
+		}
+		if pathName == "" || pathName == "$" {
+			pathName = "."
+		}
+
+		entries, err := os.ReadDir(pathName)
+		if err != nil {
+			env.raiseError(errorTodo, err.Error())
+			break
+		}
+
+		for _, entry := range entries {
+			if entry.Type().IsRegular() {
+				fullName := path.Join(pathName, entry.Name())
+				attr := getFileAttributes(env, fullName)
+				env.con.writef("%-22v %06x %06x %06x \n",
+					entry.Name(),
+					attr.loadAddress&0xff_ffff,
+					attr.executionAddress&0xff_ffff,
+					attr.fileSize&0xff_ffff)
+			}
+		}
 
 	case "CODE":
 		execOSCLIfx(env, 0x88, line, pos)
@@ -206,10 +262,10 @@ func execOSCLI(env *environment) {
 
 		attr := getFileAttributes(env, filename)
 		if attr.hasMetadata {
-			env.con.write(fmt.Sprintf("%s\t %06X %06X %06X\n", filename,
-				attr.loadAddress, attr.executionAddress, attr.fileSize))
+			env.con.writef("%s\t %06X %06X %06X\n", filename,
+				attr.loadAddress, attr.executionAddress, attr.fileSize)
 		} else {
-			env.con.write(fmt.Sprintf("%s\t ?????? ?????? %06X\n", filename, attr.fileSize))
+			env.con.writef("%s\t ?????? ?????? %06X\n", filename, attr.fileSize)
 		}
 
 	// case "KEY":
@@ -267,7 +323,7 @@ func execOSCLI(env *environment) {
 				env.mem.Poke(sheilaRomLatch, uint8(i))
 				name := env.mem.peekString(romTitleString, 0)
 				if name == "" {
-					env.con.write(fmt.Sprintf("ROM %X ?\n", i))
+					env.con.writef("ROM %X ?\n", i)
 				} else {
 					version := env.mem.Peek(romVersion)
 					romType := env.mem.Peek(romTypeByte)
@@ -280,10 +336,10 @@ func execOSCLI(env *environment) {
 					}
 					attributes += ")"
 
-					env.con.write(fmt.Sprintf("ROM %X %s %02v %s\n", i, name, version, attributes))
+					env.con.writef("ROM %X %s %02v %s\n", i, name, version, attributes)
 				}
 			} else {
-				env.con.write(fmt.Sprintf("RAM %X 16K\n", i))
+				env.con.writef("RAM %X 16K\n", i)
 			}
 		}
 		env.mem.Poke(sheilaRomLatch, currentRom)

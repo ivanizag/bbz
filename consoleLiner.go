@@ -88,3 +88,8 @@ func (c *consoleLiner) write(s string) {
 	fmt.Print(s)
 	c.env.writeSpool(s)
 }
+
+func (c *consoleLiner) writef(format string, a ...interface{}) {
+	s := fmt.Sprintf(format, a...)
+	c.write(s)
+}

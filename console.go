@@ -9,7 +9,8 @@ import (
 type console interface {
 	readline() (string, bool)
 	readChar() (uint8, bool)
-	write(s string)
+	write(string)
+	writef(string, ...interface{})
 	close()
 }
 
@@ -49,6 +50,11 @@ func (c *consoleSimple) readChar() (uint8, bool) {
 func (c *consoleSimple) write(s string) {
 	fmt.Print(s)
 	c.env.writeSpool(s)
+}
+
+func (c *consoleSimple) writef(format string, a ...interface{}) {
+	s := fmt.Sprintf(format, a...)
+	c.write(s)
 }
 
 func (c *consoleSimple) close() {}

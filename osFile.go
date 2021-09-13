@@ -257,7 +257,7 @@ func deleteFile(env *environment, filename string) uint8 {
 		return osNotFound
 	}
 
-	os.Remove(filename + ".inf")
+	os.Remove(filename + metadataExtension)
 	return osFileFound
 }
 
@@ -285,33 +285,34 @@ func getFileAttributes(env *environment, filename string) *fileAttributes {
 		$.BasObj     003000 003100 005000 00 CRC32=614721E1
 	*/
 	attr.hasMetadata = false
-	data, err := os.ReadFile(filename + ".inf")
+	metadata := filename + metadataExtension
+	data, err := os.ReadFile(metadata)
 	if errors.Is(err, os.ErrNotExist) {
 		return &attr
 	}
 	parts := strings.Fields(string(data))
 	if len(parts) < 5 {
-		env.log(fmt.Sprintf("Invalid format for metadata file %s.inf, missing fields", filename))
+		env.log(fmt.Sprintf("Invalid format for metadata file for %s, missing fields", metadata))
 		return &attr
 	}
 
 	i, err := strconv.ParseUint(parts[1], 16, 64)
 	if err != nil {
-		env.log(fmt.Sprintf("Invalid format for metadata file %s.inf, bad load address '%s'", filename, err.Error()))
+		env.log(fmt.Sprintf("Invalid format for metadata file %s, bad load address '%s'", metadata, err.Error()))
 		return &attr
 	}
 	attr.loadAddress = uint32(i)
 
 	i, err = strconv.ParseUint(parts[2], 16, 64)
 	if err != nil {
-		env.log(fmt.Sprintf("Invalid format for metadata file %s.inf, bad exec address '%s'", filename, err.Error()))
+		env.log(fmt.Sprintf("Invalid format for metadata file %s, bad exec address '%s'", metadata, err.Error()))
 		return &attr
 	}
 	attr.executionAddress = uint32(i)
 
 	i, err = strconv.ParseUint(parts[4], 16, 64)
 	if err != nil {
-		env.log(fmt.Sprintf("Invalid format for metadata file %s.inf, bad sttributes '%s'", filename, err.Error()))
+		env.log(fmt.Sprintf("Invalid format for metadata file %s, bad sttributes '%s'", metadata, err.Error()))
 		return &attr
 	}
 	attr.attributes = uint32(i)
@@ -324,5 +325,5 @@ func writeMetada(env *environment, filename string, attr *fileAttributes) {
 	// $.BasObj     003000 003100 005000 00 CRC32=614721E1
 	metadata := fmt.Sprintf("$.FILE    %08X %08X %08X %02X",
 		attr.loadAddress, attr.executionAddress, attr.fileSize, attr.attributes)
-	os.WriteFile(filename+".inf", []byte(metadata), 0644)
+	os.WriteFile(filename+metadataExtension, []byte(metadata), 0644)
 }

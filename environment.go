@@ -105,7 +105,7 @@ func (env *environment) initLanguage(slot uint8) {
 		The MOS also automatically prints the ROM's title string (&8009) so that the user is acknowledged.
 	*/
 	language := env.mem.peekString(romTitleString, 0)
-	env.con.write(fmt.Sprintf("%s\n\n", language))
+	env.con.writef("%s\n\n", language)
 
 	_, x, y, p := env.cpu.GetAXYP()
 	env.cpu.SetAXYP(1, x, y, p)

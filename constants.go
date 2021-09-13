@@ -110,4 +110,6 @@ const (
 
 	// Maximim delay to detect a double control C to quit
 	controlCDelayToQuitMs = 500
+
+	metadataExtension = ".inf"
 )

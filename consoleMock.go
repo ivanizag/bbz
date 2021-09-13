@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 type consoleMock struct {
 	linesIn []string
 	lineIn  int
@@ -38,6 +40,11 @@ func (c *consoleMock) readChar() (uint8, bool) {
 func (c *consoleMock) write(s string) {
 	c.output += s
 	c.env.writeSpool(s)
+}
+
+func (c *consoleMock) writef(format string, a ...interface{}) {
+	s := fmt.Sprintf(format, a...)
+	c.write(s)
 }
 
 func (c *consoleMock) close() {}
