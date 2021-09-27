@@ -5,11 +5,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/ivanizag/izapple2/core6502"
+	"github.com/ivanizag/iz6502"
 )
 
 type environment struct {
-	cpu *core6502.State
+	cpu *iz6502.State
 	mem *acornMemory
 	vdu *vdu
 	con console
@@ -41,8 +41,8 @@ func newEnvironment(roms []*string, cpuLog bool, apiLog bool, apiLogIO bool, mem
 	env.lastTimerUpdate = time.Now()
 	env.lastEscapeTimestamp = time.Now()
 	env.mem = newAcornMemory(memLog)
-	//env.cpu = core6502.NewNMOS6502(env.mem)
-	env.cpu = core6502.NewCMOS65c02(env.mem)
+	//env.cpu = iz6502.NewNMOS6502(env.mem)
+	env.cpu = iz6502.NewCMOS65c02(env.mem)
 	env.cpu.SetTrace(cpuLog)
 	env.vdu = newVdu(&env)
 	env.apiLog = apiLog

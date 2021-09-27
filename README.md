@@ -51,6 +51,7 @@ References:
   - *QUIT: exit to host
   - *RUN
   - *ROMS
+- 6502 emulation provided by [iz6502](https://github.com/ivanizag/iz6502)
 
 ## Usage 
 
