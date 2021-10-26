@@ -1,37 +1,53 @@
 ROM2 has the command line interpreter
 ROM1 has the compiler? May be invoked via OSBYTEa3(x=c0)
 
-$ cd ROMs/Pascal/
-$ go run ../../*.go -rom0 ../Pascal-1.10-2.rom -m
+Files have to be CR terminated (no LF as unix or CRLF as Windows)
+To convert unix files use:
+   tr '\n' '\r' < test.pas > test2.pas
+
+
+
+
+
+
+
+
+casa@servidor:~/code/go/bbz/ROMs/Pascal$ go run ../.. -rom0 ../Pascal-1.10-Compiler.rom -rom1 ../Pascal-1.10-Interpreter.rom
 bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz
 (tip: uppercase is usually needed)
+(press control-c twice to exit)
 
 Pascal
-[[[OSBYTEfd('Read hard/soft break',X=0x00,Y=0x03) => (X=0x02,Y=0x02)]]]
-[[[OSBYTE00('Identify Operating System version',X=0x01,Y=0x02) => (X=0x00,Y=0x02)]]]
-[[[OSBYTE82('Read machine high order address',X=0x00,Y=0xff) => (X=0xff,Y=0xff)]]]
-[[[OSBYTE83('Read bottom of user mem',X=0xff,Y=0xff) => (X=0x00,Y=0x0e)]]]
-[[[OSBYTE84('Read top of user mem',X=0x00,Y=0x0e) => (X=0x00,Y=0x80)]]]
-%*HOST cat test.pas
-[[[OSWORD00('read line',BUF=0x051a,range=20-ff, maxlen=255) => '*HOST cat test.pas']]]
-[[[OSCLI('*HOST cat test.pas', CMD='HOST')]]]
-program charSet(output);
-{ Prints the ASCII character set }
-var
-   ch : char;
 
-begin
-   for ch:=chr(32) to chr(126) do
-      write(ch);
-    writeln
-end.
+Pascal
 
-%COMPILE test.pas
-[[[OSWORD00('read line',BUF=0x051a,range=20-ff, maxlen=255) => 'COMPILE test.pas']]]
-[[[OSCLI('fx163,192,0', CMD='FX')]]]
-[[[Not implemented: OSBYTEa3(X=0xc0,Y=0x00)]]]
-[[[RAISE(ERR=fe, 'Bad command')]]]
-[[[BREAK(ERR=fe, 'Bad command')]]]
+%compile test2.pas
+Pascal
 
-Bad command
+ISO-Pascal compiler R1.10
+
+   1 0 - program Test(input,output);
+   2 0 - var
+   3 0 -   i: integer;
+   4 0 - begin
+   5 0 -   for i := 1 to 10 do
+   6 0 -   begin
+   7 0 -     writeln('i is ', i);
+   8 0 -   end;
+   9 0 - end.
+0 Compilation error(s)
+Code size = 81 bytes
+Pascal
+
+%go
+i is            1
+i is            2
+i is            3
+i is            4
+i is            5
+i is            6
+i is            7
+i is            8
+i is            9
+i is           10
 %

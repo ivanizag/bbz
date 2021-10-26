@@ -141,9 +141,7 @@ func execOSCLI(env *environment) {
 				// Ignore the file
 			} else if entry.Type().IsRegular() {
 				env.con.writef("%v\n", entry.Name())
-			} else {
-				// Ignore the file
-			}
+			} // else ignore the file
 		}
 
 	case "EX":

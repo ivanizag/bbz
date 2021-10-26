@@ -332,27 +332,27 @@ func execOSBYTE(env *environment) {
 		} else {
 			env.notImplemented("OSBYTEda for x or y not zero")
 		}
-
-	case 0xec:
-		option = "Read/Write character output device status"
 		/*
-			This is the location altered by *FX3
+			case 0xec:
+				option = "Read/Write character output device status"
+				/*
+					This is the location altered by *FX3
 		*/
-		newX = 0
-		newY = 0
-		isIO = true
+		/*		newX = 0
+						newY = 0
+						isIO = true
 
-	case 0xfd:
-		option = "Read hard/soft break"
-		/*
-			This location contains a value indicating the type of the last BREAK performed.
-				value 0 - soft BREAK
-				value 1 - power up reset
-				value 2 - hard BREAK
+				/*	case 0xfd:
+						option = "Read hard/soft break"
+						/*
+							This location contains a value indicating the type of the last BREAK performed.
+								value 0 - soft BREAK
+								value 1 - power up reset
+								value 2 - hard BREAK
 		*/
-		newX = 2
-		newY = 2
-
+		/*		newX = 2
+				newY = 2
+		*/
 	default:
 		if a >= 0xa6 {
 			option = "Read/write system variable"
