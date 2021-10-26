@@ -165,7 +165,7 @@ Using mode 7 colors:
 
 Using several ROMs at once:
 ```
-$ ./bbz -rom0 BASIC.ROM -rom1 ROMs/Forth_103.rom -rom2 ROMs/LISP501.ROM -rom3 ROMs/COMAL.rom -rom4 ROMs/MPROLOG310.rom 
+$ ./bbz -rom0 BASIC.ROM -rom1 ROMs/Forth_103.rom -rom2 ROMs/LISP501.ROM -rom3 ROMs/COMAL.rom -rom4 ROMs/MPROLOG310.rom -rom5 ROMs/Pascal-1.10-Compiler.rom -rom6 ROMs/Pascal-1.10-Interpreter.rom
 bbz - Acorn MOS for 6502 adaptation layer, https://github.com/ivanizag/bbz
 (tip: uppercase is usually needed)
 
@@ -176,8 +176,8 @@ ROM E FORTH 01 (SL)
 ROM D LISP 05 (SL)
 ROM C COMAL 16 (SL)
 ROM B micro PROLOG  80 (SL)
-RAM A 16K
-RAM 9 16K
+ROM A Pascal 10 (SL)
+ROM 9 Pascal 10 (SL)
 RAM 8 16K
 RAM 7 16K
 RAM 6 16K
@@ -198,12 +198,16 @@ LISP 5.01
 COMAL
 
 micro PROLOG 3.1
+
+PASCAL 1.10
 >*LISP
 LISP
 
 
+
 Evaluate : (* '*FORTH)
 FORTH
+
 
 COLD or WARM start (C/W)? C
 
@@ -212,12 +216,14 @@ FORTH
 OK
 OS' *COMAL'
 COMAL
-→*BASIC
-BASIC
->*PROLOGUE
-micro PROLOG
+
+→*PASCAL
+Pascal
+
+%*PROLOGUE
+micro PROLOG 
+
 29184 bytes free
 &.
-
 
 ```

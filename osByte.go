@@ -298,7 +298,7 @@ func execOSBYTE(env *environment) {
 	case 0xa0:
 		option = "Read VDU variable value"
 		/*
-			Entry parameters: X contains the number of the number to be read
+			Entry parameters: X contains the number of the variable to be read
 			On exit, X contains low byte of number and Y contains the high byte
 			This call reads locations &300,X and &301,X
 		*/
@@ -311,66 +311,12 @@ func execOSBYTE(env *environment) {
 			newY = 39 // Pascal editor only works with 80 columns
 		}
 
-	// Starting from a = 0xa6, we are reading mos variables.
-	case 0xa8:
-		option = "Read adress of extended vector table"
-		/*
-			On exit X and Y point to the start of the extended vectors for ROMs
-		*/
-		newX = uint8(extentedVectorTableStart & 0xff)
-		newY = uint8(extentedVectorTableStart >> 8)
-
-	case 0xda:
-		option = "R/W number of items in VDU"
-		/*
-			Writing 0 to this location can be a useful way of abandoning a
-			VDU queue otherwise writing to this location is not
-			recommended.
-		*/
-		if x == 0 || y == 0 {
-			env.vdu.clearQueue()
-		} else {
-			env.notImplemented("OSBYTEda for x or y not zero")
-		}
-		/*
-			case 0xec:
-				option = "Read/Write character output device status"
-				/*
-					This is the location altered by *FX3
-		*/
-		/*		newX = 0
-						newY = 0
-						isIO = true
-
-				/*	case 0xfd:
-						option = "Read hard/soft break"
-						/*
-							This location contains a value indicating the type of the last BREAK performed.
-								value 0 - soft BREAK
-								value 1 - power up reset
-								value 2 - hard BREAK
-		*/
-		/*		newX = 2
-				newY = 2
-		*/
 	default:
 		if a >= 0xa6 {
-			option = "Read/write system variable"
-			/*
-				Set newValue = (oldValue AND Y) EOR X
-				On Entry:
-					A = offset from MosVariablesstart - 166, X, Y
-				 On Exit:
-				       X = oldValue
-				       Y = value of next system variable
-			*/
-			address := mosVariablesStart + uint16(a) - 0xa6
-			oldValue := env.mem.Peek(address)
-			newValue := (oldValue & y) ^ x
-			env.mem.Poke(address, newValue)
-
-			newX = oldValue
-			newY = env.mem.Peek(address + 1)
+			newX, newY, option = osByte166to255(env, a, x, y)
+			if option == "" {
+				option = "Read/write system variable"
+			}
 		} else {
 			// Send to the other ROMS if available.
 			env.mem.Poke(zpA, a)

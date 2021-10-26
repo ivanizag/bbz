@@ -58,6 +58,8 @@ func newEnvironment(roms []*string, cpuLog bool, apiLog bool, apiLogIO bool, mem
 	}
 	env.mem.completeWithRam()
 
+	initOSVars(&env)
+
 	return &env
 }
 
