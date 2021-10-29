@@ -26,28 +26,21 @@ Pascal
 
 ISO-Pascal compiler R1.10
 
-   1 0 - program Test(input,output);
-   2 0 - var
-   3 0 -   i: integer;
-   4 0 - begin
-   5 0 -   for i := 1 to 10 do
-   6 0 -   begin
-   7 0 -     writeln('i is ', i);
-   8 0 -   end;
-   9 0 - end.
+   1 0 - program charSet(output);
+   2 0 - ¼ Prints the ASCII character set ¾
+   3 0 - var
+   4 0 -    ch : char;
+   5 0 - 
+   6 0 - begin
+   7 0 -    for ch:=chr(32) to chr(126) do
+   8 0 -       write(ch);
+   9 0 -     writeln
+  10 0 - end.
 0 Compilation error(s)
-Code size = 81 bytes
+Code size = 71 bytes
 Pascal
 
 %go
-i is            1
-i is            2
-i is            3
-i is            4
-i is            5
-i is            6
-i is            7
-i is            8
-i is            9
-i is           10
+ !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ←½→↑–£abcdefghijklmnopqrstuvwxyz¼‖¾÷
 %
+
