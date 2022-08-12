@@ -9,6 +9,8 @@ func execOSWORD(env *environment) {
 	a, x, y, p := env.cpu.GetAXYP()
 	xy := uint16(x) + uint16(y)<<8
 
+	sendToROMs := false
+
 	switch a {
 	case 0x00: // Read line
 		/*
@@ -144,8 +146,39 @@ func execOSWORD(env *environment) {
 
 		env.log(fmt.Sprintf("OSWORD08('Define envelope',NUMBER=%v)", number))
 
-	default:
+	case 0x0e: // Read Real-Time clock
+		// See https://beebwiki.mdfs.net/OSWORD_%260E
+		functionCode := env.mem.Peek(xy)
+		t := time.Now()
 
+		switch functionCode {
+		case 0, 3: // Return clock value as string
+			value := t.Format("Mon,02 Jan 2006.15:04:05")
+			env.mem.pokeString(xy, value, 0, 21)
+		case 1, 4: // Return BCD clock value
+			env.mem.pokeBCD(xy+0, uint8(t.Year()%100))
+			env.mem.pokeBCD(xy+1, uint8(t.Month()))
+			env.mem.pokeBCD(xy+2, uint8(t.Day()))
+			env.mem.pokeBCD(xy+3, uint8(t.Weekday()+1))
+			env.mem.pokeBCD(xy+4, uint8(t.Hour()))
+			env.mem.pokeBCD(xy+5, uint8(t.Minute()))
+			env.mem.pokeBCD(xy+6, uint8(t.Second()))
+		case 2: // Convert BCD to string
+			// TODO: get the date from the BCD values
+			value := t.Format("Mon,02 Jan 2006.15:04:05")
+			env.mem.pokeString(xy, value, 0, 21)
+		default:
+			sendToROMs = true
+		}
+
+		env.log(fmt.Sprintf("OSWORD0e('Read Real-Time clock',FUNCTION=%v)", functionCode))
+
+	default:
+		sendToROMs = true
+
+	}
+
+	if sendToROMs {
 		// Send to the other ROMS if available.
 		env.mem.Poke(zpA, a)
 		env.mem.Poke(zpX, x)
