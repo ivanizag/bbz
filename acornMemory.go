@@ -12,12 +12,16 @@ type acornMemory struct {
 	writeProtectRom [16]bool
 	activeRom       uint8
 	memLog          bool
+
+	// Some (probably unneeded) optimisations
+	pActiveRom   *[]uint8
+	activeRomEnd uint16
 }
 
 func newAcornMemory(memLog bool) *acornMemory {
 	var a acornMemory
 	a.memLog = memLog
-	a.activeRom = 0xf
+	a.selectRom(0xf)
 	return &a
 }
 
@@ -28,21 +32,16 @@ func (m *acornMemory) Poke(address uint16, value uint8) {
 			fmt.Printf("[[[Poke(%s:%02x, %02x]]]\n", area, address&0xff, value)
 		}
 	}
-
-	if romStartAddress <= address && address <= romEndAddress {
-		if !m.writeProtectRom[m.activeRom] {
-			slot := m.sideRom[m.activeRom]
-			if len(slot) > int(address-romStartAddress) {
-				slot[address-romStartAddress] = value
+	if address >= romStartAddress {
+		if address <= m.activeRomEnd {
+			if !m.writeProtectRom[m.activeRom] {
+				(*m.pActiveRom)[address-romStartAddress] = value
 			}
+			return
 		}
-		return
-	}
 
-	if address == sheilaRomLatch {
-		m.activeRom = value & 0xf
-		if m.memLog {
-			fmt.Printf("[[[EnableROM(%x)]]]\n", m.activeRom)
+		if address == sheilaRomLatch {
+			m.selectRom(value & 0xf)
 		}
 	}
 	m.data[address] = value
@@ -58,18 +57,8 @@ func (m *acornMemory) Peek(address uint16) uint8 {
 		}
 	}
 
-	return m.peekInternal(address)
-}
-
-func (m *acornMemory) peekInternal(address uint16) uint8 {
-	value := m.data[address]
-
-	if romStartAddress <= address && address <= romEndAddress && len(m.sideRom[m.activeRom]) > 0 {
-		slot := m.sideRom[m.activeRom]
-		if len(slot) > int(address-romStartAddress) {
-			return slot[address-romStartAddress]
-		}
-		return 0xaa
+	if romStartAddress <= address && address <= m.activeRomEnd {
+		return (*m.pActiveRom)[address-romStartAddress]
 	}
 
 	return value
@@ -77,6 +66,21 @@ func (m *acornMemory) peekInternal(address uint16) uint8 {
 
 func (m *acornMemory) PeekCode(address uint16) uint8 {
 	return m.Peek(address)
+}
+
+func (m *acornMemory) selectRom(slot uint8) {
+	m.activeRom = slot
+	if len(m.sideRom[m.activeRom]) > 0 {
+		m.pActiveRom = &m.sideRom[slot]
+		m.activeRomEnd = romStartAddress + uint16(len(*m.pActiveRom)) - 1
+	} else {
+		m.pActiveRom = nil
+		m.activeRomEnd = romStartAddress - 1
+	}
+
+	if m.memLog {
+		fmt.Printf("[[[EnableROM(%x)]]]\n", m.activeRom)
+	}
 }
 
 func memoryArea(address uint16) string {
@@ -208,4 +212,9 @@ func (m *acornMemory) pokeNBytes(address uint16, n int, value uint64) {
 		m.Poke(address+uint16(i), uint8(value&0xff))
 		value >>= 8
 	}
+}
+
+func (m *acornMemory) pokeBCD(address uint16, value uint8) {
+	bcd := value/10*16 + value%10
+	m.Poke(address, bcd)
 }
