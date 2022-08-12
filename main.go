@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/pkg/profile"
 )
 
 func main() {
@@ -37,6 +39,11 @@ func main() {
 		"r",
 		false,
 		"disable readline like input with history")
+	profileEnable := flag.Bool(
+		"profile",
+		false,
+		"generate profile information",
+	)
 	roms := make([]*string, 16)
 	for i := 0; i < 16; i++ {
 		roms[i] = flag.String(
@@ -56,6 +63,12 @@ func main() {
 			roms[0] = &romFile
 		}
 
+	}
+
+	if *profileEnable {
+		// See the log with:
+		//    go tool pprof --pdf ~/go/bin/izapple2sdl /tmp/profile329536248/cpu.pprof > profile.pdf
+		defer profile.Start().Stop()
 	}
 
 	env := newEnvironment(roms, *traceCPU,
