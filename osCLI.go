@@ -122,7 +122,7 @@ func execOSCLI(env *environment) {
 		pathName := ""
 		_, pathName, valid = parseFilename(line, pos)
 		if !valid {
-			env.raiseError(254, "Bad Command")
+			env.raiseError(253, "Bad String")
 			break
 		}
 		if pathName == "" || pathName == "$" {
@@ -148,7 +148,7 @@ func execOSCLI(env *environment) {
 		pathName := ""
 		_, pathName, valid = parseFilename(line, pos)
 		if !valid {
-			env.raiseError(254, "Bad Command")
+			env.raiseError(253, "Bad String")
 			break
 		}
 		if pathName == "" || pathName == "$" {
@@ -181,7 +181,7 @@ func execOSCLI(env *environment) {
 		filename := ""
 		_, filename, valid = parseFilename(line, pos)
 		if !valid {
-			env.raiseError(254, "Bad Command")
+			env.raiseError(253, "Bad String")
 			break
 		}
 
@@ -193,7 +193,7 @@ func execOSCLI(env *environment) {
 		path := ""
 		_, path, valid = parseFilename(line, pos)
 		if !valid {
-			env.raiseError(254, "Bad Command")
+			env.raiseError(253, "Bad String")
 			break
 		}
 
@@ -254,7 +254,7 @@ func execOSCLI(env *environment) {
 		filename := ""
 		_, filename, valid = parseFilename(line, pos)
 		if !valid {
-			env.raiseError(254, "Bad Command")
+			env.raiseError(253, "Bad String")
 			break
 		}
 
@@ -272,7 +272,7 @@ func execOSCLI(env *environment) {
 		filename := ""
 		pos, filename, valid = parseFilename(line, pos)
 		if !valid {
-			env.raiseError(214, "File not found")
+			env.raiseError(253, "Bad String")
 			break
 		}
 
@@ -298,7 +298,7 @@ func execOSCLI(env *environment) {
 		filename := ""
 		_, filename, valid = parseFilename(line, pos)
 		if !valid {
-			env.raiseError(214, "File not found")
+			env.raiseError(253, "Bad String")
 			break
 		}
 
@@ -348,7 +348,7 @@ func execOSCLI(env *environment) {
 		filename := ""
 		pos, filename, valid = parseFilename(line, pos)
 		if !valid {
-			env.raiseError(214, "File not found")
+			env.raiseError(253, "Bad String")
 			break
 		}
 
@@ -411,7 +411,7 @@ func execOSCLI(env *environment) {
 		filename := ""
 		_, filename, valid = parseFilename(line, pos)
 		if !valid {
-			env.raiseError(214, "File not found")
+			env.raiseError(253, "Bad String")
 			break
 		}
 		if filename != "" {
@@ -430,7 +430,7 @@ func execOSCLI(env *environment) {
 		filename := ""
 		_, filename, valid = parseFilename(line, pos)
 		if !valid {
-			env.raiseError(254, "Bad Command")
+			env.raiseError(253, "Bad String")
 			break
 		}
 
@@ -504,14 +504,16 @@ func parseFilename(line string, pos int) (int, string, bool) {
 	for line[cursor] != terminator && line[cursor] != '\r' {
 		cursor++
 	}
-	if terminator != ' ' && line[cursor] != '\r' {
-		return cursor, "", false
-	}
+
 	filename := line[pos:cursor]
 	if terminator != ' ' {
+		if line[cursor] != terminator {
+			return cursor, "", false
+		}
 		cursor++
 	}
 	cursor = parseSkipSpaces(line, cursor)
+
 	return cursor, filename, true
 }
 
