@@ -106,7 +106,8 @@ const (
 	extentedVectorTableStart uint16 = 0xff00
 	extentedVectorTableEnd   uint16 = 0xff51
 
-	maxFiles uint8 = 100
+	maxFiles          uint8 = 100
+	maxFilenameLength int   = 255
 
 	// Maximim delay to detect a double control C to quit
 	controlCDelayToQuitMs = 500

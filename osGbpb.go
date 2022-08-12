@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"os"
 )
 
 const (
@@ -98,7 +99,7 @@ func execOSGBPB(env *environment) {
 
 		newP := p
 		if count-transferred != 0 {
-			newP = newP | 1 // Set carry if not all bytes have been transferred
+			newP = newP | 1 // Set carry if not all bytes have been transferred, EOF reached.
 		} else {
 			newP = newP &^ 1 // Clear carry
 		}
@@ -106,6 +107,61 @@ func execOSGBPB(env *environment) {
 		env.cpu.SetAXYP(0 /*supported*/, x, y, newP)
 		env.log(fmt.Sprintf("OSGBPB('%s',A=%02x,FCB=%04x,FILE=%v,N=%v,ADDRESS=%04x,POS=%v) => (N=%v)",
 			option, a, controlBlock, handle, count, address, offset, transferred))
+	} else if a == 0x08 {
+		option := "Read object names from current directory into data block"
+
+		controlBlock := uint16(x) + uint16(y)<<8
+		//handle := env.mem.Peek(controlBlock)
+		address := env.mem.peekDoubleWord(controlBlock + cbDataAddress)
+		count := env.mem.peekDoubleWord(controlBlock + cbDataCount)
+		index := env.mem.peekDoubleWord(controlBlock + cbDataOffset)
+
+		error := false
+		files, err := os.ReadDir(".")
+		if err != nil {
+			// Error
+			error = true
+			env.log(err.Error())
+		}
+		pointer := uint16(address)
+		currentIndex := index
+		pending := uint32(0)
+		if !error {
+			dirSize := uint32(len(files))
+			for ; currentIndex < dirSize && currentIndex < index+count; currentIndex++ {
+				name := files[currentIndex].Name()
+				nameLen := len(name)
+				if nameLen > maxFilenameLength {
+					nameLen = maxFilenameLength
+				}
+
+				env.mem.Poke(pointer, uint8(nameLen))
+				pointer++
+				for j := 0; j < nameLen; j++ {
+					env.mem.Poke(pointer, uint8(name[j]))
+					pointer++
+				}
+			}
+			pending = dirSize - currentIndex
+		}
+
+		// Update the file control block
+		env.mem.pokeDoubleWord(controlBlock+cbDataAddress, uint32(pointer))
+		env.mem.pokeDoubleWord(controlBlock+cbDataCount, pending)
+		env.mem.pokeDoubleWord(controlBlock+cbDataOffset, currentIndex)
+		env.mem.Poke(controlBlock, uint8(currentIndex))
+
+		newP := p
+		if pending == 0 {
+			newP = newP | 1 // Set carry if no files left
+		} else {
+			newP = newP &^ 1 // Clear carry
+		}
+
+		env.cpu.SetAXYP(0 /*supported*/, x, y, newP)
+		env.log(fmt.Sprintf("OSGBPB('%s',A=%02x,FCB=%04x,INDEX=%v,ADDRESS=%04x,COUNT=%v) => (INDEX=%v)",
+			option, a, controlBlock, index, address, count, currentIndex))
+
 	} else {
 		env.notImplemented(fmt.Sprintf("OSGBPB(A=%02x)", a))
 	}
