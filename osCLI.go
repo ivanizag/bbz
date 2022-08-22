@@ -20,6 +20,7 @@ var cliCommands = []string{
 	"CAT",
 	"FX",
 	"BASIC",
+	"BYE",
 	"CODE",
 	"DIR",
 	"DELETE",
@@ -291,6 +292,8 @@ func execOSCLI(env *environment) {
 		execOSCLIfx(env, 0x89, line, pos)
 	case "OPT":
 		execOSCLIfx(env, 0x8b, line, pos)
+	case "BYE":
+		fallthrough
 	case "QUIT":
 		env.stop = true
 	case "RUN":
