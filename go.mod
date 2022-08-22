@@ -6,6 +6,7 @@ require (
 	github.com/ivanizag/iz6502 v1.2.1
 	github.com/peterh/liner v1.2.2
 	github.com/pkg/profile v1.6.0
+	github.com/mitchellh/go-homedir v1.1.0
 )
 
 require (

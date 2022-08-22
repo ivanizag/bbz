@@ -6,6 +6,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/mitchellh/go-homedir"
 )
 
 const (
@@ -42,6 +44,7 @@ func execOSFILE(env *environment) {
 	endAddress := env.mem.peekDoubleWord(controlBlock + cbEndAddressOrAttributes)
 
 	filename := env.mem.peekString(filenameAddress, 0x0d)
+	filename = processPath(filename)
 
 	newA := uint8(0) // Nothing found
 	option := ""
@@ -65,7 +68,7 @@ func execOSFILE(env *environment) {
 			attr.loadAddress = loadAddress
 			attr.executionAddress = executionAddress
 			attr.attributes = endAddress
-			writeMetada(env, filename, attr)
+			writeMetadata(env, filename, attr)
 		}
 		newA = attr.fileType
 
@@ -74,7 +77,7 @@ func execOSFILE(env *environment) {
 		attr := getFileAttributes(env, filename)
 		if attr.fileType != osNotFound {
 			attr.loadAddress = loadAddress
-			writeMetada(env, filename, attr)
+			writeMetadata(env, filename, attr)
 		}
 		newA = attr.fileType
 
@@ -83,7 +86,7 @@ func execOSFILE(env *environment) {
 		attr := getFileAttributes(env, filename)
 		if attr.fileType != osNotFound {
 			attr.executionAddress = executionAddress
-			writeMetada(env, filename, attr)
+			writeMetadata(env, filename, attr)
 		}
 		newA = attr.fileType
 
@@ -92,7 +95,7 @@ func execOSFILE(env *environment) {
 		attr := getFileAttributes(env, filename)
 		if attr.fileType != osNotFound {
 			attr.attributes = endAddress
-			writeMetada(env, filename, attr)
+			writeMetadata(env, filename, attr)
 		}
 		newA = attr.fileType
 
@@ -242,7 +245,7 @@ func saveFile(env *environment, filename string,
 		attr.fileType = osFileFound
 	}
 
-	writeMetada(env, filename, &attr)
+	writeMetadata(env, filename, &attr)
 	return &attr
 }
 
@@ -321,9 +324,18 @@ func getFileAttributes(env *environment, filename string) *fileAttributes {
 	return &attr
 }
 
-func writeMetada(env *environment, filename string, attr *fileAttributes) {
+func writeMetadata(env *environment, filename string, attr *fileAttributes) {
 	// $.BasObj     003000 003100 005000 00 CRC32=614721E1
 	metadata := fmt.Sprintf("$.FILE    %08X %08X %08X %02X",
 		attr.loadAddress, attr.executionAddress, attr.fileSize, attr.attributes)
 	os.WriteFile(filename+metadataExtension, []byte(metadata), 0644)
+}
+
+func processPath(path string) string {
+	newPath, err := homedir.Expand(path)
+	if err != nil {
+		// Ignore the error and use the original version
+		return path
+	}
+	return newPath
 }
