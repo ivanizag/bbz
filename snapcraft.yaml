@@ -1,0 +1,27 @@
+name: mosbbz
+summary: Acorn MOS for 6502 adaptation layer
+description: |
+  This is a MOS for 6502 execution environment. It's a 6502 emulator that
+  intercepts the calls to the Acorm Machine Operating System (MOS) and
+  services them as a native console application on the host.
+  This is not a BBC Micro emulator. It does not emulate the BBC Micro
+  hardware, just the 6502 processor.
+  BBZ is a console program, it tries to look and feel as a modern console
+  application not as a BBC Micro.
+version: git
+grade: stable
+base: core20
+
+confinement: strict
+
+apps:
+  mosbbz:
+    command: bin/bbz
+    plugs:
+      - home
+
+parts:
+  bbz:
+    plugin: go
+    source-type: git
+    source: https://github.com/ivanizag/bbz

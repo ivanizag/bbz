@@ -97,10 +97,33 @@ AvaIlable flags (to put before the ROM filename if present):
     	filename for rom 15 (slot 0x0)
 
 
-
 ```
 
-## Usage example
+## Install
+
+### From binary
+
+Get the latest version from the [releases](https://github.com/ivanizag/bbz/releases) page in Github
+
+### From source
+
+bbz is a standard go project, build with `go build .`
+
+### From the Snap store
+
+bbz is named [mosbbz](https://snapcraft.io/mosbbz) in the Snap store:
+```
+$ sudo snap install mosbbz
+```
+
+You will need to download a ROM, for exmaple [BASIC.ROM](https://github.com/ivanizag/bbz/raw/main/BASIC.ROM), and invoke as `mosbbz`':
+
+```
+$ mosbbz BASIC.ROM
+```
+
+
+## Usage examples
 
 Running BBC Basic:
 ```
