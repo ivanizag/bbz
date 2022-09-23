@@ -108,15 +108,17 @@ func memoryArea(address uint16) string {
 var firmware []byte
 
 func (m *acornMemory) loadFirmware() {
-	for i := 0; i < len(firmware); i++ {
-		m.data[i] = firmware[i]
-	}
+	//for i := 0; i < len(firmware); i++ {
+	//	m.data[i] = firmware[i]
+	//}
+	copy(m.data[:], firmware)
 }
 
 func (m *acornMemory) loadRom(filename string, slot uint8) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		panic(err)
+		fmt.Printf("ROM can't be loaded:\n    %s\n", err)
+		os.Exit(1)
 	}
 
 	m.sideRom[slot] = data
