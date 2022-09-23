@@ -27,6 +27,8 @@ var cliCommands = []string{
 	"DRIVE",
 	"EXEC",
 	"EX",
+	"ERA",
+	"ERASE",
 	"HELP",
 	"HOST", // Added for bbz
 	"INFO",
@@ -177,6 +179,10 @@ func execOSCLI(env *environment) {
 	case "CODE":
 		execOSCLIfx(env, 0x88, line, pos)
 
+	case "ERA":
+		fallthrough
+	case "ERASE":
+		fallthrough
 	case "DELETE":
 		// *DELETE filename
 		filename := ""
@@ -516,6 +522,8 @@ func parseFilename(line string, pos int) (int, string, bool) {
 		cursor++
 	}
 	cursor = parseSkipSpaces(line, cursor)
+
+	filename = processPath(filename)
 
 	return cursor, filename, true
 }
