@@ -8,3 +8,7 @@ XROMs/
 +.0
 +.0.inf
 mosbbz_*.snap
+.scannerwork/
+coverage.out
+test.out
+
