@@ -79,3 +79,13 @@ func (env *environment) writeSpool(s string) {
 
 	fmt.Fprintf(file, "%s", s)
 }
+
+func (env *environment) closeSpool() {
+	spoolHandle := env.mem.Peek(mosSpoolFileHandle)
+	if spoolHandle == 0 {
+		// No spool file defined
+		return
+	}
+	env.closeFile(spoolHandle)
+	env.mem.Poke(mosSpoolFileHandle, 0)
+}

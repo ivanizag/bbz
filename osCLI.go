@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,11 +11,12 @@ import (
 )
 
 /*
-	Start commands. The order is relevant to find the proper shortcuts.
-	Example: *L. is *LOAD and not *LINE
-	See:
-		https://github.com/raybellis/mos120/blob/2e2ff80708e79553643e4b77c947b0652117731b/mos120.s#L6839
-		BBC Microcomputer Advanced User Guide, chapter 2.
+Start commands. The order is relevant to find the proper shortcuts.
+Example: *L. is *LOAD and not *LINE
+See:
+
+	https://github.com/raybellis/mos120/blob/2e2ff80708e79553643e4b77c947b0652117731b/mos120.s#L6839
+	BBC Microcomputer Advanced User Guide, chapter 2.
 */
 var cliCommands = []string{
 	"CAT",
@@ -29,6 +31,7 @@ var cliCommands = []string{
 	"EX",
 	"ERA",
 	"ERASE",
+	"EXEC",
 	"HELP",
 	"HOST", // Added for bbz
 	"INFO",
@@ -231,7 +234,33 @@ func execOSCLI(env *environment) {
 		}
 		// Do nothing. We could use subdirs for drive 1, 2 and 3
 
-	//case "EXEC":
+	case "EXEC":
+		filename := ""
+		_, filename, valid = parseFilename(line, pos)
+		if !valid || filename == "" {
+			env.raiseError(253, "Bad String")
+			break
+		}
+
+		file, err := os.Open(filename)
+		if err != nil {
+			env.raiseError(214, "File not found")
+			break
+		}
+		defer file.Close()
+
+		var lines []string
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			lines = append(lines, strings.TrimSpace(scanner.Text()))
+		}
+
+		if err := scanner.Err(); err != nil {
+			env.raiseError(errorTodo, err.Error())
+			break
+		}
+
+		env.execContent = lines
 
 	case "HELP":
 		env.con.write("\nBBZ 0.0\n")

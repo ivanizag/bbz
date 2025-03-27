@@ -24,6 +24,9 @@ type environment struct {
 	// files
 	file [maxFiles]*os.File
 
+	// exec content
+	execContent []string
+
 	// behaviour
 	stop                bool
 	lastEscapeTimestamp time.Time
@@ -112,6 +115,22 @@ func (env *environment) initLanguage(slot uint8) {
 	_, x, y, p := env.cpu.GetAXYP()
 	env.cpu.SetAXYP(1, x, y, p)
 	env.cpu.SetPC(romStartAddress)
+}
+
+func (env *environment) readline() (string, bool) {
+	if len(env.execContent) > 0 {
+		line := env.execContent[0]
+		env.execContent = env.execContent[1:]
+		env.con.write(line)
+		env.con.write("\n")
+		return line, false
+	}
+
+	return env.con.readline()
+}
+
+func (env *environment) readChar() (uint8, bool) {
+	return env.con.readChar()
 }
 
 func (env *environment) raiseError(code uint8, msg string) {

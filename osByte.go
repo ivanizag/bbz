@@ -112,6 +112,16 @@ func execOSBYTE(env *environment) {
 		*/
 		// We do nothing
 
+	case 0x77:
+		option = "Close any sppol or exec files"
+		/*
+			This call closes any open files being used as *SPOOLed output
+			or *EXEC d input to be closed. This call also performs a paged
+			ROM call with A=&10 (TODO)
+		*/
+		env.closeSpool()
+		env.execContent = nil
+
 	case 0x7c:
 		option = "Clear ESCAPE condition"
 		/*

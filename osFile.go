@@ -324,7 +324,7 @@ func getFileAttributes(env *environment, filename string) *fileAttributes {
 	return &attr
 }
 
-func writeMetadata(env *environment, filename string, attr *fileAttributes) {
+func writeMetadata(_ *environment, filename string, attr *fileAttributes) {
 	// $.BasObj     003000 003100 005000 00 CRC32=614721E1
 	metadata := fmt.Sprintf("$.FILE    %08X %08X %08X %02X",
 		attr.loadAddress, attr.executionAddress, attr.fileSize, attr.attributes)

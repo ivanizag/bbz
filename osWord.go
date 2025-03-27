@@ -23,7 +23,7 @@ func execOSWORD(env *environment) {
 			line. C not equal to zero indicates that an escape condition terminated
 			entry. Y is set to the length of the line, excluding the CR if C=0.
 		*/
-		line, stop := env.con.readline()
+		line, stop := env.readline()
 		if stop {
 			env.stop = true
 			return

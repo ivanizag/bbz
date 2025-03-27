@@ -465,7 +465,7 @@ func (v *vdu) writeInternal(cmd uint8, q []uint8) {
 				   shapes.
 				*/
 				out = " "
-			case 224 <= cmd && cmd <= 255:
+			case 224 <= cmd:
 				/*
 				   224-255 These characters may be defined by the user using the statement VDU23.
 				*/

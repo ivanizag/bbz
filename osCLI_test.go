@@ -66,3 +66,29 @@ func Test_OSCLI_TYPE(t *testing.T) {
 		t.Error("*TYPE error")
 	}
 }
+
+func Test_OSCLI_EXEC(t *testing.T) {
+	source := "PRINT 7*9"
+	printed := "63"
+
+	// Prepare a file
+	file, err := os.CreateTemp("", "bbztest.*.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(file.Name())
+
+	_, err = file.WriteString(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out := integrationTestBasic([]string{
+		"*EXEC " + file.Name(),
+	})
+
+	if !strings.Contains(out, printed) {
+		t.Log(out)
+		t.Error("*TYPE error")
+	}
+}

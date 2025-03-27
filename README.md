@@ -38,10 +38,10 @@ References:
 - Most of the MOS entrypoints and VDU control codes are defined.
 - Does some of the mode 7 text coloring using ANSI escape codes on the terminal. Try `VDU 65,129,66,130,67,132,68,135,69,13,10` on BBC BASIC.
 - OSCLI comands suported:
-  - *| */ *FX *BASIC *DELETE *DIR *EX *HELP *INFO *LOAD *RUN *SAVE *SPOOL *TYPE
+  - *| */ *FX *BASIC *DELETE *DIR *EX *EXIT *HELP *INFO *LOAD *RUN *SAVE *SPOOL *TYPE
   - *CAT filename: dumps the file contents using the BBC Micro character set and VDU conversions
   - *HOST cmd: execute a command on the host OS. Example: `*HOST ls -la`
-  - **BYE or *QUIT: exit to host
+  - *BYE or *QUIT: exit to host
   - *ROMS: List the loaded ROMs
 - 6502 emulation provided by [iz6502](https://github.com/ivanizag/iz6502)
 
