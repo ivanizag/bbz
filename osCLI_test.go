@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"strings"
 	"testing"
 )
@@ -42,53 +41,31 @@ func Test_OSCLI_FX_spaces(t *testing.T) {
 }
 
 func Test_OSCLI_TYPE(t *testing.T) {
-	source := "Hi []{}"
-	printed := "Hi ←→¼¾>"
+	out, err := integrationTestBasicWithFile([]string{
+		"*TYPE " + TEST_FILE_PLACEHOLDER,
+	}, "Hi []{}")
 
-	// Prepare a file
-	file, err := os.CreateTemp("", "bbztest.*.txt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Remove(file.Name())
-
-	_, err = file.WriteString(source)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	out := integrationTestBasic([]string{
-		"*TYPE " + file.Name(),
-	})
-
-	if !strings.Contains(out, printed) {
+	if !strings.Contains(out, "Hi ←→¼¾>") {
 		t.Log(out)
 		t.Error("*TYPE error")
 	}
 }
 
 func Test_OSCLI_EXEC(t *testing.T) {
-	source := "PRINT 7*9"
-	printed := "63"
+	out, err := integrationTestBasicWithFile([]string{
+		"*EXEC " + TEST_FILE_PLACEHOLDER,
+	}, "PRINT 7*9")
 
-	// Prepare a file
-	file, err := os.CreateTemp("", "bbztest.*.txt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Remove(file.Name())
-
-	_, err = file.WriteString(source)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	out := integrationTestBasic([]string{
-		"*EXEC " + file.Name(),
-	})
-
-	if !strings.Contains(out, printed) {
+	if !strings.Contains(out, "63") {
 		t.Log(out)
-		t.Error("*TYPE error")
+		t.Error("*EXEC error")
 	}
 }
