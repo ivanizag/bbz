@@ -154,9 +154,10 @@ func (m *acornMemory) peekString(address uint16, terminator uint8) string {
 
 func (m *acornMemory) pokeString(address uint16, s string, terminator uint8, maxLength uint8) {
 	// maxLength not including terminator
+	var runes = []rune(s)
 	var i int
-	for i = 0; i < len(s) && i < int(maxLength); i++ {
-		m.Poke(address+uint16(i), s[i])
+	for i = 0; i < len(runes) && i < int(maxLength); i++ {
+		m.Poke(address+uint16(i), uint8(runes[i]))
 	}
 	m.Poke(address+uint16(i), terminator)
 }

@@ -523,7 +523,9 @@ func adjustAscii(ch uint8) string {
 func adjustAsciiMode7(ch uint8) string {
 	// Some chars are different from standard ASCII
 	// See: http://beebwiki.mdfs.net/ASCII
-	ch = ch & 0x7f
+
+	// Commented out to allow non-ASCII latin 1 characters
+	// ch = ch & 0x7f
 
 	switch ch {
 	case '[':
