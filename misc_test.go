@@ -12,6 +12,6 @@ func TestHighAscciTokens(t *testing.T) {
 
 	if !strings.Contains(out, "46") {
 		t.Log(out)
-		t.Error("beeb-fstest failed")
+		t.Error("Using ñ as PRINT failed")
 	}
 }
