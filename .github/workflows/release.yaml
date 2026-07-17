@@ -22,11 +22,12 @@ jobs:
         name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22
+          go-version: 1.26.3
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
+          version: "~> v2.17"
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

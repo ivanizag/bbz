@@ -1,6 +1,6 @@
 module github.com/ivanizag/bbz
 
-go 1.22
+go 1.26.3
 
 require (
 	github.com/ivanizag/iz6502 v1.2.1

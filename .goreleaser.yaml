@@ -30,3 +30,6 @@ archives:
 changelog:
   use: github-native
 
+release:
+  draft: true
+

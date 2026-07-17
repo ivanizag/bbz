@@ -109,6 +109,13 @@ Get the latest version from the [releases](https://github.com/ivanizag/bbz/relea
 
 bbz is a standard go project, build with `go build .`
 
+### From homebrew
+
+Use:
+````
+$ brew install ivanizag/tap/bbz
+````
+
 ### From the Snap store
 
 bbz is named [mosbbz](https://snapcraft.io/mosbbz) in the Snap store:
