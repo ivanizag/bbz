@@ -56,13 +56,9 @@ func main() {
 
 	if *roms[0] == "" {
 		romFile := flag.Arg(0)
-		if romFile == "" {
-			def := "BASIC.ROM"
-			roms[0] = &def
-		} else {
+		if romFile != "" {
 			roms[0] = &romFile
 		}
-
 	}
 
 	if *profileEnable {

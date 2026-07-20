@@ -57,6 +57,8 @@ func newEnvironment(roms []*string, cpuLog bool, apiLog bool, apiLogIO bool, mem
 	for i, rom := range roms {
 		if *rom != "" {
 			env.mem.loadRom(*rom, uint8(0xf-i))
+		} else if i == 0 {
+			env.mem.loadRomBytes(basicRom, 0xf)
 		}
 	}
 	env.mem.completeWithRam()

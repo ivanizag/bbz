@@ -107,6 +107,9 @@ func memoryArea(address uint16) string {
 //go:embed firmware
 var firmware []byte
 
+//go:embed BASIC.ROM
+var basicRom []byte
+
 func (m *acornMemory) loadFirmware() {
 	//for i := 0; i < len(firmware); i++ {
 	//	m.data[i] = firmware[i]
@@ -121,6 +124,10 @@ func (m *acornMemory) loadRom(filename string, slot uint8) {
 		os.Exit(1)
 	}
 
+	m.loadRomBytes(data, slot)
+}
+
+func (m *acornMemory) loadRomBytes(data []uint8, slot uint8) {
 	m.sideRom[slot] = data
 	m.writeProtectRom[slot] = true
 
